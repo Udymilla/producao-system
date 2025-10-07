@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import SessionLocal, engine, Base
-from models import Producao
-from schemas import ProducaoCreate, ProducaoResponse
+from backend.database import SessionLocal, engine, Base
+from backend.models import Producao
+from backend.schemas import ProducaoCreate, ProducaoResponse
 from typing import List
 
 # Cria as tabelas se ainda não existirem
