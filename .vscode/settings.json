@@ -1,6 +1,7 @@
 {
     "python.defaultInterpreterPath": "C:\\Projetos\\producao-system\\venv\\Scripts\\python.exe",
     "python.terminal.activateEnvironment": true,
-    "python.terminal.launchArgs": [],
-    "terminal.integrated.defaultProfile.windows": "PowerShell"
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+    "python-envs.pythonProjects": []
 }
+
