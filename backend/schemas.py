@@ -22,4 +22,32 @@ class ProducaoResponse(ProducaoBase):
         json_encoders = {
             datetime: lambda v: v.strftime("%d-%m-%Y %H:%M:%S")
         }
+from pydantic import BaseModel
+from datetime import datetime
+from enum import Enum
+
+class StatusFicha(str, Enum):
+    EM_PRODUCAO = "em_producao"
+    EM_ESTOQUE = "em_estoque"
+    FINALIZADA = "finalizada"
+
+# ✅ Dados recebidos ao criar uma ficha
+class FichaCreate(BaseModel):
+    modelo: str
+    funcao: str
+    quantidade_total: int
+    setor_atual: str | None = None
+
+# ✅ Dados retornados pela API
+class FichaResponse(FichaCreate):
+    id: int
+    numero_ficha: str
+    status: StatusFicha
+    criado_em: datetime
+
+    class Config:
+        orm_mode = True
+        json_encoders = {
+            datetime: lambda v: v.strftime("%d-%m-%Y %H:%M:%S")
+        }
 

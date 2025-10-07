@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal, engine, Base
 from backend.models import Producao
@@ -118,5 +118,36 @@ def resumo_por_operador(
         }
         for linha in resultado
     ]
+from backend.models import Ficha, StatusFicha
+from backend.schemas import FichaCreate, FichaResponse
+
+# ✅ Gerador de número sequencial (F0001, F0002, etc.)
+def gerar_numero_ficha(db: Session):
+    ultima = db.query(Ficha).order_by(Ficha.id.desc()).first()
+    if not ultima:
+        return "F0001"
+    numero = int(ultima.numero_ficha[1:]) + 1
+    return f"F{numero:04d}"
+
+# ✅ Criar ficha nova
+@app.post("/fichas", response_model=FichaResponse)
+def criar_ficha(dados: FichaCreate, db: Session = Depends(get_db)):
+    numero = gerar_numero_ficha(db)
+    nova_ficha = Ficha(
+        numero_ficha=numero,
+        modelo=dados.modelo,
+        funcao=dados.funcao,
+        quantidade_total=dados.quantidade_total,
+        setor_atual=dados.setor_atual,
+    )
+    db.add(nova_ficha)
+    db.commit()
+    db.refresh(nova_ficha)
+    return nova_ficha
+
+# ✅ Listar fichas
+@app.get("/fichas", response_model=list[FichaResponse])
+def listar_fichas(db: Session = Depends(get_db)):
+    return db.query(Ficha).order_by(Ficha.id.desc()).all()
 
 
