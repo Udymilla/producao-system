@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal, engine, Base
-from backend.models import Producao
+from backend.models import Producao, Ficha
 from backend.schemas import ProducaoCreate, ProducaoResponse
 from typing import List
 
@@ -151,3 +151,16 @@ def listar_fichas(db: Session = Depends(get_db)):
     return db.query(Ficha).order_by(Ficha.id.desc()).all()
 
 
+@app.post("/lancar", response_model=ProducaoResponse)
+def lancar_producao(dados: ProducaoCreate, db: Session = Depends(get_db)):
+    # 🔹 Verifica se a ficha existe
+    ficha = db.query(Ficha).filter(Ficha.id == dados.ficha_id).first()
+    if not ficha:
+        raise HTTPException(status_code=404, detail="Ficha não encontrada")
+
+    # 🔹 Cria o lançamento vinculado à ficha
+    nova_ficha = Producao(**dados.dict())
+    db.add(nova_ficha)
+    db.commit()
+    db.refresh(nova_ficha)
+    return nova_ficha
