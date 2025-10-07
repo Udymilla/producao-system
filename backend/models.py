@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from datetime import datetime
 from backend.database import Base
 
@@ -6,7 +6,7 @@ class Producao(Base):
     __tablename__ = "producao"
 
     id = Column(Integer, primary_key=True, index=True)
-    ficha_id = Column(String, index=True)
+    ficha_id = Column(Integer, ForeignKey("fichas.id"), nullable=False)  # 🔹 relação com Ficha
     operador = Column(String)
     modelo = Column(String)
     servico = Column(String)
