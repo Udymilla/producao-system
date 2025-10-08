@@ -3,8 +3,11 @@ from pydantic import BaseModel
 
 # 🔹 Classe base — usada para criação e atualização
 class ProducaoBase(BaseModel):
+    ficha_id: int              # 🔹 nova coluna
     operador: str
-    produto: str
+    modelo: str
+    servico: str
+    tamanho: str
     quantidade: int
     valor: float
 
