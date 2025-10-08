@@ -1,4 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal, engine, Base
 from backend.models import Producao, Ficha
@@ -8,7 +12,12 @@ from typing import List
 # Cria as tabelas se ainda não existirem
 Base.metadata.create_all(bind=engine)
 
+
 app = FastAPI(title="Sistema de Produção Dadalto")
+
+# Configuração de templates e arquivos estáticos
+app.mount("/static", StaticFiles(directory="backend/frontend/static"), name="static")
+templates = Jinja2Templates(directory="backend/frontend/templates")
 
 # Dependência para obter sessão do banco
 def get_db():
@@ -164,3 +173,23 @@ def lancar_producao(dados: ProducaoCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(nova_ficha)
     return nova_ficha
+
+# Rota de login (GET e POST)
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.post("/login", response_class=HTMLResponse)
+def login_action(request: Request, username: str = Form(...), password: str = Form(...)):
+    # Simples autenticação estática (só pra testar)
+    if username == "producao" and password == "1234":
+        return RedirectResponse(url="/dashboard", status_code=303)
+    elif username == "lider" and password == "4321":
+        return RedirectResponse(url="/dashboard", status_code=303)
+    else:
+        return templates.TemplateResponse("login.html", {"request": request, "erro": "Usuário ou senha incorretos"})
+
+# Página principal (dashboard)
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard_page(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})
