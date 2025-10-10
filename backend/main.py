@@ -223,3 +223,33 @@ async def dashboard(request: Request, user: str = "", perfil: str = ""):
         "usuario": user.capitalize(),
         "perfil": perfil.capitalize()
     })
+
+    # ==== Páginas do sistema (placeholders) ====
+
+@app.get("/producao", response_class=HTMLResponse)
+async def pagina_producao(request: Request):
+    return templates.TemplateResponse("pagina.html", {"request": request, "titulo": "Consulta de Produção"})
+
+@app.get("/fichas", response_class=HTMLResponse)
+async def pagina_fichas(request: Request):
+    return templates.TemplateResponse("pagina.html", {"request": request, "titulo": "Consulta de Fichas"})
+
+@app.get("/estoque", response_class=HTMLResponse)
+async def pagina_estoque(request: Request):
+    return templates.TemplateResponse("pagina.html", {"request": request, "titulo": "Estoque de Produção"})
+
+@app.get("/funcionarios", response_class=HTMLResponse)
+async def pagina_funcionarios(request: Request):
+    return templates.TemplateResponse("pagina.html", {"request": request, "titulo": "Controle de Funcionários"})
+
+@app.get("/admin", response_class=HTMLResponse)
+async def pagina_admin(request: Request):
+    return templates.TemplateResponse("pagina.html", {"request": request, "titulo": "Administração do Sistema"})
+
+# ===== Página de Lançamento de Produção =====
+@app.get("/lancar", response_class=HTMLResponse)
+async def lancar_page(request: Request):
+    return templates.TemplateResponse("pagina.html", {
+        "request": request,
+        "titulo": "Lançar Produção"
+    })
