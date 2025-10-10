@@ -246,13 +246,6 @@ async def pagina_funcionarios(request: Request):
 async def pagina_admin(request: Request):
     return templates.TemplateResponse("pagina.html", {"request": request, "titulo": "Administração do Sistema"})
 
-# ===== Página de Lançamento de Produção =====
-@app.get("/lancar", response_class=HTMLResponse)
-async def lancar_page(request: Request):
-    return templates.TemplateResponse("pagina.html", {
-        "request": request,
-        "titulo": "Lançar Produção"
-    })
 # ===== Página de Lançamento (GET) =====
 @app.get("/lancar", response_class=HTMLResponse)
 async def lancar_page(request: Request):
@@ -265,7 +258,28 @@ async def lancar_post(request: Request):
     operador = form.get("operador")
     modelo = form.get("modelo")
     funcao = form.get("funcao")
-    quantidade = form.get("quantidade")
+    quantidade = int(form.get("quantidade"))
+    qtd_fichas = int(form.get("qtd_fichas"))
+    numero_inicial = int(form.get("numero_inicial"))
+
+    # Geração automática dos números das fichas
+    fichas = [str(numero_inicial + i) for i in range(qtd_fichas)]
+
+    # Monta o resumo pra exibição
+    mensagem = (
+        f"<b>Operador:</b> {operador}<br>"
+        f"<b>Modelo:</b> {modelo}<br>"
+        f"<b>Função:</b> {funcao}<br>"
+        f"<b>Qtd por ficha:</b> {quantidade}<br>"
+        f"<b>Fichas geradas:</b> {', '.join(fichas)}"
+    )
+
+    return templates.TemplateResponse("pagina.html", {
+        "request": request,
+        "titulo": "Lançamento Concluído ✅",
+        "mensagem": mensagem
+    })
+
 
     # Aqui futuramente faremos o INSERT no banco (por enquanto só exibe)
     return templates.TemplateResponse("pagina.html", {

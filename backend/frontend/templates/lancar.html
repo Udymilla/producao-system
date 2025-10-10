@@ -21,32 +21,116 @@
     <form method="post" action="/lancar" class="bg-white shadow-md rounded-xl p-8 w-full max-w-lg">
       <h2 class="text-xl font-semibold text-gray-700 mb-6">Nova Ficha de Produção</h2>
 
+      <!-- Número inicial -->
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2">Número Inicial da Ficha:</label>
+        <input name="numero_inicial" type="number" min="1" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: 3400" required>
+      </div>
+
+      <!-- Quantidade de fichas -->
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2">Quantidade de Fichas:</label>
+        <input name="qtd_fichas" type="number" min="1" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: 50" required>
+      </div>
+
+      <!-- Operador -->
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Operador:</label>
-        <input name="operador" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Digite o nome do operador" required>
+        <input name="operador" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Digite o nome do funcionario" required>
       </div>
 
+      <!-- Modelo -->
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Modelo:</label>
-        <input name="modelo" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: CAMISA OPERACIONAL" required>
+        <select name="modelo" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" required>
+          <option value="">Selecione um modelo</option>
+          <option>AVENTAL BARBEIRO</option>
+          <option>AVENTAL DE 1 RASPA</option>
+          <option>AVENTAL DE 1 VAQUETA</option>
+          <option>AVENTAL DE 1,20</option>
+          <option>BLUSÃO ESPECIAL</option>
+          <option>BLUSÃO DE RASPA</option>
+          <option>BLUSÃO VAQ</option>
+          <option>CALÇA RASPA</option>
+          <option>COBERTURA P</option>
+          <option>COBERTURA M</option>
+          <option>COBERTURA G</option>
+          <option>COBERTURA VERMELHA</option>
+          <option>ARGONISTA FORCHETA P</option>
+          <option>ARGONISTA FORCHETA M</option>
+          <option>LUVA COMUM P15 C REFORÇO EXTERNO</option>
+          <option>LUVA COMUM P20</option>
+          <option>LUVA COMUM P7</option>
+          <option>LUVA COMUM P7 C REFORÇO EXTERNO</option>
+          <option>LUVA COMUM WURTH</option>
+          <option>LUVA DE FORCHETA P</option>
+          <option>LUVA DE FORCHETA M</option>
+          <option>LUVA DE FORCHETA G</option>
+          <option>LUVA DE VAQUETA OVO M</option>
+          <option>LUVA DE VAQUETA OVO G</option>
+          <option>LUVA DE VAQUETA OVO GG</option>
+          <option>LUVA MÃO DE GATO</option>
+          <option>LUVA DE RASPA PT</option>
+          <option>LUVA DE RASPA VAN</option>
+          <option>LUVA REVESTIDA DUPLA</option>
+          <option>LUVA REVESTIDA GUIDO</option>
+          <option>LUVA REVESTIDA WURTH</option>
+          <option>LUVA VAQUETA MISTA CURTA</option>
+          <option>LUVA DE VAQUETA MISTA LONGA P15</option>
+          <option>LUVA DE VAQUETA MISTA LONGA P20</option>
+          <option>LUVA VI FORCHETA GG</option>
+          <option>MANGOTE INTEIRO</option>
+          <option>MANGOTE DE EMENDA</option>
+          <option>PERNEIRA DE EMENDA</option>
+          <option>PERNEIRA DE FIVELA</option>
+          <option>PERNEIRA DE VELCRO</option>
+        </select>
       </div>
 
+      <!-- Função -->
       <div class="mb-4">
         <label class="block text-gray-700 font-medium mb-2">Função:</label>
-        <input name="funcao" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: COSTURA / ACABAMENTO" required>
+        <select name="funcao" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" required>
+          <option value="">Selecione a função</option>
+          <option>CORTADOR</option>
+          <option>AMONTOADOR</option>
+          <option>COLADOR</option>
+          <option>REFORCADOR</option>
+          <option>REFILAR</option>
+          <option>PASSAR</option>
+          <option>PASSAR LUVA</option>
+          <option>REVISAR E EMPACOTAR</option>
+          <option>VIRADOR</option>
+          <option>BAIXA COSTURA</option>
+          <option>EMENDAR DORSO</option>
+          <option>FECHAR LUVA</option>
+          <option>LUVA COMPLETA</option>
+          <option>PASSAR VIES</option>
+          <option>PREGAR OVO + ELASTICO</option>
+          <option>FECHAR LUVA + PREGAR PUNHO MALHA</option>
+          <option>PREGAR OVO</option>
+          <option>PREGAR ELASTICO</option>
+          <option>PREGAR DORSO + FIVELA</option>
+          <option>PREGAR FORCHETA</option>
+          <option>PREGAR DEDÃO</option>
+          <option>PREGAR DEDAO</option>
+        </select>
       </div>
 
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Quantidade:</label>
-        <input name="quantidade" type="number" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" min="1" required>
+      <!-- Quantidade por ficha -->
+      <div class="mb-6">
+        <label class="block text-gray-700 font-medium mb-2">Quantidade por Ficha:</label>
+        <input name="quantidade" type="number" min="1" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: 20" required>
       </div>
 
+      <!-- Botão -->
       <div class="flex justify-end mt-6">
         <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Lançar</button>
       </div>
     </form>
   </main>
 
+  <!-- Rodapé -->
   <footer class="bg-gray-100 py-4 text-center text-sm text-gray-500 border-t">
     © 2025 Dadalto Couro · Sistema de Produção Interno
   </footer>
