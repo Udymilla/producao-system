@@ -253,3 +253,23 @@ async def lancar_page(request: Request):
         "request": request,
         "titulo": "Lançar Produção"
     })
+# ===== Página de Lançamento (GET) =====
+@app.get("/lancar", response_class=HTMLResponse)
+async def lancar_page(request: Request):
+    return templates.TemplateResponse("lancar.html", {"request": request})
+
+# ===== Receber envio do formulário (POST) =====
+@app.post("/lancar", response_class=HTMLResponse)
+async def lancar_post(request: Request):
+    form = await request.form()
+    operador = form.get("operador")
+    modelo = form.get("modelo")
+    funcao = form.get("funcao")
+    quantidade = form.get("quantidade")
+
+    # Aqui futuramente faremos o INSERT no banco (por enquanto só exibe)
+    return templates.TemplateResponse("pagina.html", {
+        "request": request,
+        "titulo": "Lançamento Concluído",
+        "mensagem": f"Ficha lançada para {operador} - {modelo} ({quantidade} peças)"
+    })

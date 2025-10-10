@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lançar Produção - Sistema Dadalto</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <!-- Cabeçalho -->
+  <header class="bg-blue-800 text-white py-4 shadow-md">
+    <div class="container mx-auto flex justify-between items-center px-6">
+      <h1 class="text-2xl font-bold tracking-wide">Lançar Produção</h1>
+      <a href="/dashboard" class="text-sm bg-gray-200 text-blue-800 px-3 py-1 rounded hover:bg-gray-300 transition">⬅ Voltar</a>
+    </div>
+  </header>
+
+  <!-- Formulário -->
+  <main class="flex-1 flex justify-center items-start py-10">
+    <form method="post" action="/lancar" class="bg-white shadow-md rounded-xl p-8 w-full max-w-lg">
+      <h2 class="text-xl font-semibold text-gray-700 mb-6">Nova Ficha de Produção</h2>
+
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2">Operador:</label>
+        <input name="operador" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Digite o nome do operador" required>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2">Modelo:</label>
+        <input name="modelo" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: CAMISA OPERACIONAL" required>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2">Função:</label>
+        <input name="funcao" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: COSTURA / ACABAMENTO" required>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2">Quantidade:</label>
+        <input name="quantidade" type="number" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" min="1" required>
+      </div>
+
+      <div class="flex justify-end mt-6">
+        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Lançar</button>
+      </div>
+    </form>
+  </main>
+
+  <footer class="bg-gray-100 py-4 text-center text-sm text-gray-500 border-t">
+    © 2025 Dadalto Couro · Sistema de Produção Interno
+  </footer>
+
+</body>
+</html>
