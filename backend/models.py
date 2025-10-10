@@ -38,3 +38,11 @@ class Ficha(Base):
     setor_atual = Column(String, nullable=True)
     status = Column(Enum(StatusFicha), default=StatusFicha.EM_PRODUCAO)
     criado_em = Column(DateTime, default=datetime.utcnow)
+
+class Usuario(Base):
+    __tablename__ = "usuarios"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String, nullable=False)
+    senha = Column(String, nullable=False)
+    perfil = Column(String, nullable=False)  # "producao" ou "lider"

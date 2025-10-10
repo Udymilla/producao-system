@@ -192,3 +192,34 @@ def login_action(request: Request, username: str = Form(...), password: str = Fo
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
+templates = Jinja2Templates(directory="backend/frontend/templates")
+
+# Simulação inicial (sem banco ainda)
+USUARIOS_FAKE = {
+    "rafael": {"senha": "1234", "perfil": "lider"},
+    "suelen": {"senha": "1234", "perfil": "producao"},
+}
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request, "erro": False})
+
+@app.post("/login", response_class=HTMLResponse)
+async def login(request: Request, usuario: str = Form(...), senha: str = Form(...)):
+    user = USUARIOS_FAKE.get(usuario.lower())
+    if user and user["senha"] == senha:
+        response = RedirectResponse(url=f"/dashboard?user={usuario}&perfil={user['perfil']}", status_code=303)
+        return response
+    return templates.TemplateResponse("login.html", {"request": request, "erro": True})
+
+@app.get("/logout")
+async def logout():
+    return RedirectResponse(url="/login")
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request, user: str = "", perfil: str = ""):
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "usuario": user.capitalize(),
+        "perfil": perfil.capitalize()
+    })

@@ -32,43 +32,50 @@
     <header class="bg-blue-800 text-white py-4 shadow-md">
         <div class="container mx-auto flex justify-between items-center px-6">
             <h1 class="text-2xl font-bold tracking-wide">Sistema de Produção Dadalto</h1>
-            <a href="/logout" class="text-sm bg-red-500 px-3 py-1 rounded hover:bg-red-600 transition">Sair</a>
+
+            <div class="flex items-center gap-4">
+                <span class="text-sm opacity-90">
+                    👋<b>{{ usuario }}</b>  
+                    <span class="text-gray-200">({{ perfil }})</span>
+                </span>
+                <a href="/logout" class="text-sm bg-red-500 px-3 py-1 rounded hover:bg-red-600 transition">Sair</a>
+            </div>
         </div>
     </header>
 
     <!-- Conteúdo principal -->
     <main class="flex-1 container mx-auto px-6 py-10">
-        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Bem-vindo, operador 👋</h2>
+        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Bem-vindo(a) 👋</h2>
 
         <div class="grid md:grid-cols-3 gap-6">
 
             <div class="card">
                 <h3 class="text-lg font-bold text-gray-700 mb-2">📄 Lançar Produção</h3>
-                <p class="text-gray-500 text-sm mb-4">Registre novas fichas de produção com os dados do operador e modelo.</p>
+                <p class="text-gray-500 text-sm mb-4">Registre novas fichas de produção.</p>
                 <a href="/lancar" class="btn"><i class="ri-add-circle-line"></i> Nova Produção</a>
             </div>
 
             <div class="card">
                 <h3 class="text-lg font-bold text-gray-700 mb-2">📊 Consultar Produção</h3>
-                <p class="text-gray-500 text-sm mb-4">Veja relatórios de produção filtrando por operador, função ou período.</p>
+                <p class="text-gray-500 text-sm mb-4">Veja relatórios de produção.</p>
                 <a href="/docs#/default/get_resumo_resumo_get" class="btn"><i class="ri-bar-chart-2-line"></i> Consultar</a>
             </div>
 
             <div class="card">
-                <h3 class="text-lg font-bold text-gray-700 mb-2">🧾 Fichas</h3>
-                <p class="text-gray-500 text-sm mb-4">Visualize e gerencie fichas já lançadas, com pesquisa por número e modelo.</p>
+                <h3 class="text-lg font-bold text-gray-700 mb-2">🧾 Consultar Fichas</h3>
+                <p class="text-gray-500 text-sm mb-4">Visualize e gerencie fichas já lançadas.</p>
                 <a href="/docs#/default/get_fichas_fichas_get" class="btn"><i class="ri-file-list-3-line"></i> Ver Fichas</a>
             </div>
 
             <div class="card">
                 <h3 class="text-lg font-bold text-gray-700 mb-2">📦 Estoque</h3>
-                <p class="text-gray-500 text-sm mb-4">Monitore fichas e produtos em cada setor, com status de movimentação.</p>
+                <p class="text-gray-500 text-sm mb-4">Acompanhe os produtos em cada setor.</p>
                 <a href="#" class="btn"><i class="ri-archive-stack-line"></i> Acessar Estoque</a>
             </div>
 
             <div class="card">
                 <h3 class="text-lg font-bold text-gray-700 mb-2">👥 Funcionários</h3>
-                <p class="text-gray-500 text-sm mb-4">Consulte dados e desempenho individual de cada operador.</p>
+                <p class="text-gray-500 text-sm mb-4">Consulte dados e desempenho individual.</p>
                 <a href="#" class="btn"><i class="ri-user-settings-line"></i> Ver Funcionários</a>
             </div>
 
