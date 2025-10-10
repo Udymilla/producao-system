@@ -189,7 +189,6 @@ def login_action(request: Request, username: str = Form(...), password: str = Fo
     else:
         return templates.TemplateResponse("login.html", {"request": request, "erro": "Usuário ou senha incorretos"})
 
-# Página principal (dashboard)
 @app.get("/dashboard", response_class=HTMLResponse)
-def dashboard_page(request: Request):
+def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
