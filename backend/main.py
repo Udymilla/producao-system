@@ -329,3 +329,25 @@ async def cadastro_formulario_post(request: Request):
 @app.get("/administracao", response_class=HTMLResponse)
 async def administracao_page(request: Request):
     return templates.TemplateResponse("administracao.html", {"request": request})
+
+# ==== Login de Operador ====
+@app.get("/login_operador", response_class=HTMLResponse)
+async def login_operador_page(request: Request):
+    return templates.TemplateResponse("login_operador.html", {"request": request})
+
+@app.post("/login_operador", response_class=HTMLResponse)
+async def login_operador_post(request: Request):
+    form = await request.form()
+    nome = form.get("nome")
+    senha = form.get("senha")
+
+    db = SessionLocal()
+    usuario = db.query(UsuarioOperacional).filter_by(nome=nome, senha=senha).first()
+
+    if not usuario:
+        return templates.TemplateResponse(
+            "login_operador.html",
+            {"request": request, "erro": "Usuário ou senha incorretos"}
+        )
+
+    return RedirectResponse(url="/formulario_operador", status_code=302)
