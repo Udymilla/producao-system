@@ -1,5 +1,4 @@
-from sqlalchemy import (
-    Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Enum, Text
+from sqlalchemy import ( Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Enum, Text
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -93,6 +92,15 @@ class Producao(Base):
     criado_em = Column(DateTime, default=datetime.utcnow)
 
     ficha = relationship("Ficha", back_populates="producoes")
+ 
+class Usuario(Base):
+    __tablename__ = "usuarios"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nome = Column(String, nullable=False)
+    senha = Column(String, nullable=False)
+    perfil = Column(String, nullable=False)  # Ex: 'administrador', 'lider', 'producao'
+
     
 
 

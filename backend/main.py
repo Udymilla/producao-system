@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal, engine, Base
-from backend.models import Producao, Ficha, UsuarioOperacional
+from backend.models import Producao, Ficha, Usuario, UsuarioOperacional
 from backend.schemas import ProducaoCreate, ProducaoResponse
 from typing import List
 import qrcode
@@ -177,43 +177,30 @@ def lancar_producao(dados: ProducaoCreate, db: Session = Depends(get_db)):
     db.refresh(nova_ficha)
     return nova_ficha
 
-# Rota de login (GET e POST)
-@app.get("/login", response_class=HTMLResponse)
-def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
-@app.post("/login", response_class=HTMLResponse)
-def login_action(request: Request, username: str = Form(...), password: str = Form(...)):
-    # Simples autenticação estática (só pra testar)
-    if username == "producao" and password == "1234":
-        return RedirectResponse(url="/dashboard", status_code=303)
-    elif username == "lider" and password == "4321":
-        return RedirectResponse(url="/dashboard", status_code=303)
-    else:
-        return templates.TemplateResponse("login.html", {"request": request, "erro": "Usuário ou senha incorretos"})
-
-@app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
-templates = Jinja2Templates(directory="backend/frontend/templates")
-
-# Simulação inicial (sem banco ainda)
-USUARIOS_FAKE = {
-    "rafael": {"senha": "1234", "perfil": "lider"},
-    "suelen": {"senha": "1234", "perfil": "producao"},
-}
-
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "erro": False})
 
 @app.post("/login", response_class=HTMLResponse)
-async def login(request: Request, usuario: str = Form(...), senha: str = Form(...)):
-    user = USUARIOS_FAKE.get(usuario.lower())
-    if user and user["senha"] == senha:
-        response = RedirectResponse(url=f"/dashboard?user={usuario}&perfil={user['perfil']}", status_code=303)
-        return response
-    return templates.TemplateResponse("login.html", {"request": request, "erro": True})
+async def login_post(request: Request, usuario: str = Form(...), senha: str = Form(...)):
+    db = SessionLocal()
+    user = db.query(Usuario).filter_by(nome=usuario, senha=senha).first()
+    db.close()
+
+    if not user:
+        return templates.TemplateResponse(
+            "login.html",
+            {"request": request, "erro": True}
+        )
+
+    # Redireciona conforme perfil do usuário
+    if user.perfil.lower() == "administrador":
+        return RedirectResponse(url="/administracao", status_code=303)
+    else:
+        return RedirectResponse(
+            url=f"/dashboard?user={user.nome}&perfil={user.perfil}",
+            status_code=303
+            )
 
 @app.get("/logout")
 async def logout():
@@ -339,19 +326,32 @@ async def administracao_page(request: Request):
 async def cadastrar_usuario_page(request: Request):
     return templates.TemplateResponse("cadastrar_usuario.html", {"request": request})
 
+
 @app.post("/cadastrar_usuario", response_class=HTMLResponse)
 async def cadastrar_usuario(request: Request,
                             nome: str = Form(...),
                             senha: str = Form(...),
                             perfil: str = Form(...)):
     db = SessionLocal()
-    novo_usuario = UsuarioOperacional(nome=nome, senha=senha, funcao=perfil)
+
+    # Verifica se o usuário já existe
+    usuario_existente = db.query(Usuario).filter(Usuario.nome == nome).first()
+    if usuario_existente:
+        db.close()
+        mensagem = f"⚠️ O usuário <b>{nome}</b> já está cadastrado!"
+        return templates.TemplateResponse("cadastrar_usuario.html", {
+            "request": request,
+            "mensagem": mensagem
+        })
+
+    # Cria novo usuário (na tabela correta)
+    novo_usuario = Usuario(nome=nome, senha=senha, perfil=perfil)
     db.add(novo_usuario)
     db.commit()
     db.close()
 
-    mensagem = f"Usuário <b>{nome}</b> cadastrado com sucesso como <b>{perfil}</b> ✅"
-    return templates.TemplateResponse("administracao.html", {
+    mensagem = f"✅ Usuário <b>{nome}</b> cadastrado com sucesso como <b>{perfil}</b>!"
+    return templates.TemplateResponse("cadastrar_usuario.html", {
         "request": request,
         "mensagem": mensagem
     })
