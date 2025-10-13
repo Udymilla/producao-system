@@ -333,6 +333,29 @@ async def cadastro_formulario_post(request: Request):
 async def administracao_page(request: Request):
     return templates.TemplateResponse("administracao.html", {"request": request})
 
+# ===== Cadastrar novos usuários operacionais =====
+
+@app.get("/cadastrar_usuario", response_class=HTMLResponse)
+async def cadastrar_usuario_page(request: Request):
+    return templates.TemplateResponse("cadastrar_usuario.html", {"request": request})
+
+@app.post("/cadastrar_usuario", response_class=HTMLResponse)
+async def cadastrar_usuario(request: Request,
+                            nome: str = Form(...),
+                            senha: str = Form(...),
+                            perfil: str = Form(...)):
+    db = SessionLocal()
+    novo_usuario = UsuarioOperacional(nome=nome, senha=senha, funcao=perfil)
+    db.add(novo_usuario)
+    db.commit()
+    db.close()
+
+    mensagem = f"Usuário <b>{nome}</b> cadastrado com sucesso como <b>{perfil}</b> ✅"
+    return templates.TemplateResponse("administracao.html", {
+        "request": request,
+        "mensagem": mensagem
+    })
+
 # ==== Login de Operador ====
 @app.get("/login_operador", response_class=HTMLResponse)
 async def login_operador_page(request: Request):

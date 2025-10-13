@@ -93,6 +93,6 @@ class Producao(Base):
     criado_em = Column(DateTime, default=datetime.utcnow)
 
     ficha = relationship("Ficha", back_populates="producoes")
-    usuario = relationship("UsuarioOperacional", back_populates="producoes")
+    
 
 
