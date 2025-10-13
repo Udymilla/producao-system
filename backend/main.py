@@ -8,6 +8,9 @@ from backend.database import SessionLocal, engine, Base
 from backend.models import Producao, Ficha, UsuarioOperacional
 from backend.schemas import ProducaoCreate, ProducaoResponse
 from typing import List
+import qrcode
+import io
+import base64
 
 # Cria as tabelas se ainda não existirem
 Base.metadata.create_all(bind=engine)

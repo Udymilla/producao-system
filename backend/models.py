@@ -31,18 +31,15 @@ class UsuarioSistema(Base):
 # ==========================================================
 # 🔹 USUÁRIOS OPERACIONAIS (PIN simplificado para o QR)
 # ==========================================================
+
 class UsuarioOperacional(Base):
     __tablename__ = "usuarios_operacionais"
 
     id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String(100), nullable=False)
-    codigo = Column(String(20), unique=True, nullable=False)  # ex: luana.p
-    pin = Column(String(10), nullable=False)  # ex: 4321
-    funcao_padrao = Column(String(50))
-    ativo = Column(Boolean, default=True)
-    criado_em = Column(DateTime, default=datetime.utcnow)
-
-    producoes = relationship("Producao", back_populates="usuario")
+    nome = Column(String, nullable=False)
+    senha = Column(String, nullable=False)
+    funcao = Column(String, nullable=False)  # costura, acabamento, corte, etc.
+    ativo = Column(Integer, default=1)       # 1 = ativo, 0 = inativo
 
 # ==========================================================
 # 🔹 FORMULÁRIOS / MODELOS
@@ -98,22 +95,4 @@ class Producao(Base):
     ficha = relationship("Ficha", back_populates="producoes")
     usuario = relationship("UsuarioOperacional", back_populates="producoes")
 
-# ==========================================================
-# 🔹 USUÁRIOS GENÉRICOS (seus originais, mantidos)
-# ==========================================================
-class Usuario(Base):
-    __tablename__ = "usuarios"
 
-    id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, nullable=False)
-    senha = Column(String, nullable=False)
-    perfil = Column(String, nullable=False)  # "producao" ou "lider"
-
-class UsuarioOperacional(Base):
-    __tablename__ = "usuarios_operacionais"
-
-    id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, nullable=False)
-    senha = Column(String, nullable=False)
-    funcao = Column(String, nullable=False)  # costura, acabamento, corte, etc.
-    ativo = Column(Integer, default=1)       # 1 = ativo, 0 = inativo
