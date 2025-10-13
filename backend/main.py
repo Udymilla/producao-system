@@ -287,3 +287,45 @@ async def lancar_post(request: Request):
         "titulo": "Lançamento Concluído",
         "mensagem": f"Ficha lançada para {operador} - {modelo} ({quantidade} peças)"
     })
+
+# Página de consulta de fichas
+@app.get("/consultar_fichas", response_class=HTMLResponse)
+async def consultar_fichas(request: Request):
+    return templates.TemplateResponse("consultar_fichas.html", {"request": request})
+
+# Página de consulta de produção por funcionário
+@app.get("/consultar_producao", response_class=HTMLResponse)
+async def consultar_producao(request: Request):
+    return templates.TemplateResponse("consultar_producao.html", {"request": request})
+
+# ===== Página de cadastro de formulários (GET) =====
+@app.get("/cadastro_formulario", response_class=HTMLResponse)
+async def cadastro_formulario_page(request: Request):
+    return templates.TemplateResponse("cadastro_formulario.html", {"request": request})
+
+# ===== Receber dados do formulário (POST) =====
+@app.post("/cadastro_formulario", response_class=HTMLResponse)
+async def cadastro_formulario_post(request: Request):
+    form = await request.form()
+    modelo = form.get("modelo")
+    cor = form.get("cor") or "Não informada"
+    tamanhos = form.getlist("tamanhos")
+    link = form.get("link")
+
+    mensagem = (
+        f"<b>Modelo:</b> {modelo}<br>"
+        f"<b>Cor:</b> {cor}<br>"
+        f"<b>Tamanhos:</b> {', '.join(tamanhos) if tamanhos else 'Nenhum selecionado'}<br>"
+        f"<b>Link:</b> <a href='{link}' target='_blank' class='text-blue-600 underline'>{link}</a>"
+    )
+
+    return templates.TemplateResponse("pagina.html", {
+        "request": request,
+        "titulo": "Formulário Cadastrado com Sucesso ✅",
+        "mensagem": mensagem
+    })
+
+# ===== Página de Administração =====
+@app.get("/administracao", response_class=HTMLResponse)
+async def administracao_page(request: Request):
+    return templates.TemplateResponse("administracao.html", {"request": request})
