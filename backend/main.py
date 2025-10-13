@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal, engine, Base
-from backend.models import Producao, Ficha
+from backend.models import Producao, Ficha, UsuarioOperacional
 from backend.schemas import ProducaoCreate, ProducaoResponse
 from typing import List
 
@@ -351,3 +351,50 @@ async def login_operador_post(request: Request):
         )
 
     return RedirectResponse(url="/formulario_operador", status_code=302)
+@app.get("/formulario_operador", response_class=HTMLResponse)
+async def formulario_operador_page(request: Request):
+    # Simulação temporária do operador logado
+    operador = "Luana"
+    funcao = "ACABAMENTO"
+    return templates.TemplateResponse("formulario_operador.html", {"request": request, "operador": operador, "funcao": funcao})
+
+
+@app.post("/formulario_operador", response_class=HTMLResponse)
+async def formulario_operador_post(request: Request):
+    form = await request.form()
+    operador = form.get("operador")
+    funcao = form.get("funcao")
+    modelo = form.get("modelo")
+    quantidade = int(form.get("quantidade"))
+
+    db = SessionLocal()
+
+    # Gera número da ficha (última +1)
+    ultimo = db.query(Ficha).order_by(Ficha.id.desc()).first()
+    numero_ficha = (int(ultimo.numero_ficha) + 1) if ultimo else 1000
+
+    nova_ficha = Ficha(
+        numero_ficha=str(numero_ficha),
+        modelo=modelo,
+        funcao=funcao,
+        quantidade_total=quantidade,
+        setor_atual=funcao,
+    )
+
+    db.add(nova_ficha)
+    db.commit()
+
+    # Gera QR code
+    qr_data = f"Ficha {numero_ficha} - {modelo} - {funcao}"
+    qr_img = qrcode.make(qr_data)
+    buf = io.BytesIO()
+    qr_img.save(buf, format="PNG")
+    qr_code_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+    return templates.TemplateResponse("formulario_operador.html", {
+        "request": request,
+        "operador": operador,
+        "funcao": funcao,
+        "qr_code": qr_code_base64,
+        "numero_ficha": numero_ficha
+    })
