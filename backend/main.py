@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal, engine, Base
-from backend.models import Producao, Ficha, Usuario, UsuarioOperacional
+from backend.models import Producao, Ficha, Usuario, UsuarioOperacional, ValorModelo
 from backend.schemas import ProducaoCreate, ProducaoResponse
 from typing import List
 import qrcode
@@ -92,6 +92,7 @@ def resumo_por_operador(
     data_final: str | None = Query(None, description="Data final no formato YYYY-MM-DD"),
     db: Session = Depends(get_db)
 ):
+    
     # Inicia a query base
     query = db.query(
         Producao.operador,
@@ -130,6 +131,41 @@ def resumo_por_operador(
         }
         for linha in resultado
     ]
+
+# ===== Cadastrar ou atualizar valor de modelo =====
+@app.get("/valores_modelos", response_class=HTMLResponse)
+async def listar_valores_modelos(request: Request):
+    db = SessionLocal()
+    valores = db.query(ValorModelo).order_by(ValorModelo.modelo.asc()).all()
+    db.close()
+
+    return templates.TemplateResponse("valores_modelos.html", {
+        "request": request,
+        "valores": valores
+    })
+
+
+@app.post("/valores_modelos", response_class=HTMLResponse)
+async def cadastrar_valor_modelo(request: Request, modelo: str = Form(...), valor: float = Form(...)):
+    db = SessionLocal()
+    existente = db.query(ValorModelo).filter(ValorModelo.modelo == modelo).first()
+
+    if existente:
+        existente.valor_unitario = valor  # atualiza valor
+    else:
+        novo = ValorModelo(modelo=modelo, valor_unitario=valor)
+        db.add(novo)
+
+    db.commit()
+    valores = db.query(ValorModelo).order_by(ValorModelo.modelo.asc()).all()
+    db.close()
+
+    return templates.TemplateResponse("valores_modelos.html", {
+        "request": request,
+        "valores": valores,
+        "mensagem": f"Valor atualizado para o modelo <b>{modelo}</b>: R$ {valor:.2f}"
+    })
+
 from backend.models import Ficha, StatusFicha
 from backend.schemas import FichaCreate, FichaResponse
 

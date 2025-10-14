@@ -101,6 +101,12 @@ class Usuario(Base):
     senha = Column(String, nullable=False)
     perfil = Column(String, nullable=False)  # Ex: 'administrador', 'lider', 'producao'
 
+class ValorModelo(Base):
+    __tablename__ = "valores_modelos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    modelo = Column(String, unique=True, nullable=False)
+    valor_unitario = Column(Float, nullable=False)
     
 
 
