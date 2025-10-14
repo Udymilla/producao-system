@@ -132,13 +132,14 @@ def resumo_por_operador(
         for linha in resultado
     ]
 
+# ===== Cadastrar ou atualizar valor de modelo =====
 @app.get("/valores_modelos", response_class=HTMLResponse)
 async def listar_valores_modelos(request: Request):
     db = SessionLocal()
     valores = db.query(ValorModelo).order_by(ValorModelo.modelo.asc()).all()
 
     # 🔹 busca todos os modelos das tabelas fichas e produção
-    modelos_fichas = db.query(Ficha.modelo).distinct().all()
+    modelos_fichas = db.query(Ficha.modelo).distinct().all()   # ✅ corrigido
     modelos_producao = db.query(Producao.modelo).distinct().all()
 
     # 🔹 junta e remove duplicados
@@ -151,7 +152,6 @@ async def listar_valores_modelos(request: Request):
         "valores": valores,
         "modelos": modelos
     })
-
 
 @app.post("/valores_modelos", response_class=HTMLResponse)
 async def cadastrar_valor_modelo(request: Request, modelo: str = Form(...), valor: float = Form(...)):
@@ -327,10 +327,20 @@ async def lancar_post(request: Request):
 async def consultar_fichas(request: Request):
     return templates.TemplateResponse("consultar_fichas.html", {"request": request})
 
-# Página de consulta de produção por funcionário
 @app.get("/consultar_producao", response_class=HTMLResponse)
-async def consultar_producao(request: Request):
-    return templates.TemplateResponse("consultar_producao.html", {"request": request})
+async def consultar_producao_page(request: Request, user: str = "", perfil: str = ""):
+    db = SessionLocal()
+    operadores = db.query(Producao.operador).distinct().order_by(Producao.operador.asc()).all()
+    modelos = db.query(Producao.modelo).distinct().order_by(Producao.modelo.asc()).all()
+    db.close()
+
+    return templates.TemplateResponse("consultar_producao.html", {
+        "request": request,
+        "usuario": user.capitalize(),
+        "perfil": perfil.lower(),  # 🔹 importante para o controle no HTML
+        "operadores": [o[0] for o in operadores],
+        "modelos": [m[0] for m in modelos]
+    })
 
 # ===== Página de cadastro de formulários (GET) =====
 @app.get("/cadastro_formulario", response_class=HTMLResponse)

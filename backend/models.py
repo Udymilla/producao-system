@@ -1,4 +1,5 @@
-from sqlalchemy import ( Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Enum, Text
+from sqlalchemy import (
+    Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Enum, Text
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -30,7 +31,6 @@ class UsuarioSistema(Base):
 # ==========================================================
 # 🔹 USUÁRIOS OPERACIONAIS (PIN simplificado para o QR)
 # ==========================================================
-
 class UsuarioOperacional(Base):
     __tablename__ = "usuarios_operacionais"
 
@@ -52,8 +52,6 @@ class Formulario(Base):
     ativo = Column(Boolean, default=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
 
-    fichas = relationship("Ficha", back_populates="modelo")
-
 # ==========================================================
 # 🔹 FICHAS
 # ==========================================================
@@ -62,8 +60,7 @@ class Ficha(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     numero_ficha = Column(String, unique=True, index=True)
-    modelo_id = Column(Integer, ForeignKey("formularios.id"))
-    modelo_nome = Column(String, nullable=False)
+    modelo = Column(String, nullable=False)  # nome do modelo (ex: CAMISA OPERACIONAL)
     funcao = Column(String, nullable=False)
     quantidade_total = Column(Integer, nullable=False)
     setor_atual = Column(String, nullable=True)
@@ -71,7 +68,7 @@ class Ficha(Base):
     token_qr = Column(String(64), unique=True, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
 
-    modelo = relationship("Formulario", back_populates="fichas")
+    # relação com produções
     producoes = relationship("Producao", back_populates="ficha")
 
 # ==========================================================
@@ -92,7 +89,10 @@ class Producao(Base):
     criado_em = Column(DateTime, default=datetime.utcnow)
 
     ficha = relationship("Ficha", back_populates="producoes")
- 
+
+# ==========================================================
+# 🔹 USUÁRIOS DO SISTEMA DE LOGIN
+# ==========================================================
 class Usuario(Base):
     __tablename__ = "usuarios"
 
@@ -101,12 +101,12 @@ class Usuario(Base):
     senha = Column(String, nullable=False)
     perfil = Column(String, nullable=False)  # Ex: 'administrador', 'lider', 'producao'
 
+# ==========================================================
+# 🔹 VALORES POR MODELO
+# ==========================================================
 class ValorModelo(Base):
     __tablename__ = "valores_modelos"
 
     id = Column(Integer, primary_key=True, index=True)
     modelo = Column(String, unique=True, nullable=False)
     valor_unitario = Column(Float, nullable=False)
-    
-
-
