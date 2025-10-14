@@ -2,148 +2,101 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Consulta de Produção - Sistema Dadalto</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    /* Remove tudo que não é essencial durante impressão */
-    @media print {
-      header, footer, button, .no-print {
-        display: none !important;
-      }
-      main {
-        padding: 0;
-        margin: 0;
-      }
-      table {
-        page-break-inside: auto;
-      }
-      tr { page-break-inside: avoid; page-break-after: auto; }
-      canvas {
-        max-height: 300px !important;
-      }
-    }
-  </style>
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
 </head>
+<body class="bg-gray-100 font-sans">
 
-<body class="bg-gray-100 min-h-screen flex flex-col">
+  <div class="max-w-6xl mx-auto py-10">
+    <h1 class="text-3xl font-bold text-blue-800 mb-8">📊 Consulta de Produção</h1>
 
-  <!-- Cabeçalho -->
-  <header class="bg-blue-800 text-white py-4 shadow-md no-print">
-    <div class="container mx-auto flex justify-between items-center px-6">
-      <h1 class="text-2xl font-bold tracking-wide">Consulta de Produção</h1>
-      <div class="flex gap-2">
-        <button onclick="window.print()" class="bg-green-500 px-3 py-1 rounded hover:bg-green-600 transition">
-          🖨️ Imprimir Relatório
-        </button>
-        <a href="/dashboard" class="text-sm bg-gray-200 text-blue-800 px-3 py-1 rounded hover:bg-gray-300 transition">
-          ⬅ Voltar
-        </a>
-      </div>
-    </div>
-  </header>
-
-  <!-- Conteúdo principal -->
-  <main class="flex-1 container mx-auto px-6 py-8" id="conteudoRelatorio">
-
-    <h2 class="text-xl font-semibold text-gray-700 mb-6">Filtrar Produção</h2>
-
-    <!-- Filtros -->
-    <form class="grid md:grid-cols-4 gap-4 bg-white shadow-md p-6 rounded-xl mb-8 no-print">
+    <form id="formFiltro" method="post" action="/consultar_producao_dados" class="bg-white p-6 rounded shadow mb-8 grid grid-cols-4 gap-4">
       <div>
-        <label class="block text-gray-700 text-sm font-medium mb-1">Operador</label>
-        <input type="text" placeholder="Ex: Luana" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500">
+        <label class="block font-medium text-gray-700 mb-1">Operador</label>
+        <input type="text" name="operador" placeholder="Ex: Luana" class="w-full border px-3 py-2 rounded">
       </div>
+
       <div>
-        <label class="block text-gray-700 text-sm font-medium mb-1">Função</label>
-        <input type="text" placeholder="Ex: COSTURA" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500">
+        <label class="block font-medium text-gray-700 mb-1">Data Inicial</label>
+        <input type="date" name="data_inicial" class="w-full border px-3 py-2 rounded">
       </div>
+
       <div>
-        <label class="block text-gray-700 text-sm font-medium mb-1">Data Inicial</label>
-        <input type="date" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500">
+        <label class="block font-medium text-gray-700 mb-1">Data Final</label>
+        <input type="date" name="data_final" class="w-full border px-3 py-2 rounded">
       </div>
-      <div>
-        <label class="block text-gray-700 text-sm font-medium mb-1">Data Final</label>
-        <input type="date" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500">
-      </div>
-      <div class="md:col-span-4 flex justify-end">
-        <button type="button" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Pesquisar</button>
+
+      <div class="flex items-end">
+        <button type="submit" class="bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-800 transition w-full">Pesquisar</button>
       </div>
     </form>
 
-    <!-- Tabela -->
-    <div class="bg-white shadow-md rounded-xl overflow-hidden mb-10">
-      <table class="w-full border-collapse">
-        <thead class="bg-blue-50 border-b border-gray-200">
-          <tr>
-            <th class="text-left py-3 px-4 font-semibold text-gray-700">Operador</th>
-            <th class="text-left py-3 px-4 font-semibold text-gray-700">Função</th>
-            <th class="text-left py-3 px-4 font-semibold text-gray-700">Total Peças</th>
-            <th class="text-left py-3 px-4 font-semibold text-gray-700">Valor Total (R$)</th>
-            <th class="text-left py-3 px-4 font-semibold text-gray-700">Último Lançamento</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="hover:bg-gray-50">
-            <td class="py-3 px-4 text-gray-600">Luana</td>
-            <td class="py-3 px-4 text-gray-600">COSTURA</td>
-            <td class="py-3 px-4 text-gray-600">320</td>
-            <td class="py-3 px-4 text-gray-600">960,00</td>
-            <td class="py-3 px-4 text-gray-600">12/10/2025</td>
-          </tr>
-          <tr class="hover:bg-gray-50">
-            <td class="py-3 px-4 text-gray-600">Vitória</td>
-            <td class="py-3 px-4 text-gray-600">ACABAMENTO</td>
-            <td class="py-3 px-4 text-gray-600">210</td>
-            <td class="py-3 px-4 text-gray-600">735,00</td>
-            <td class="py-3 px-4 text-gray-600">12/10/2025</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="bg-white p-6 rounded shadow mb-8">
+      <canvas id="graficoModelos" height="120"></canvas>
     </div>
 
-    <!-- Gráfico -->
-    <div class="bg-white shadow-md rounded-xl p-6">
-      <h3 class="text-lg font-semibold text-gray-700 mb-4">Produtividade por Operador</h3>
-      <canvas id="graficoProdutividade" height="120"></canvas>
-    </div>
+    <table class="w-full bg-white shadow rounded border-collapse">
+      <thead class="bg-blue-700 text-white">
+        <tr>
+          <th class="px-4 py-2 text-left">Modelo</th>
+          <th class="px-4 py-2 text-left">Quantidade</th>
+          <th class="px-4 py-2 text-left">Valor Total (R$)</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaResultados"></tbody>
+    </table>
+  </div>
 
-  </main>
-
-  <a href="/valores_modelos" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-   💰 Configurar Valores por Modelo </a>
-
-  <!-- Rodapé -->
-  <footer class="bg-gray-100 py-4 text-center text-sm text-gray-500 border-t no-print">
-    © 2025 Dadalto Couro · Sistema de Produção Interno
-  </footer>
-
-  <!-- Script do gráfico -->
   <script>
-    const ctx = document.getElementById('graficoProdutividade').getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: ['Luana', 'Vitória', 'Rafael'],
-        datasets: [{
-          label: 'Peças Produzidas',
-          data: [320, 210, 180],
-          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b']
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false },
-          tooltip: { mode: 'index', intersect: false }
+    const form = document.getElementById('formFiltro');
+    const ctx = document.getElementById('graficoModelos').getContext('2d');
+    let grafico;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const response = await fetch('/consultar_producao_dados', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+
+      // Atualiza tabela
+      const tbody = document.getElementById('tabelaResultados');
+      tbody.innerHTML = '';
+      data.modelos.forEach((modelo, i) => {
+        const row = `
+          <tr class="border-b hover:bg-gray-50">
+            <td class="px-4 py-2">${modelo}</td>
+            <td class="px-4 py-2">${data.quantidades[i]}</td>
+            <td class="px-4 py-2">R$ ${data.valores[i].toFixed(2)}</td>
+          </tr>`;
+        tbody.innerHTML += row;
+      });
+
+      // Atualiza gráfico
+      if (grafico) grafico.destroy();
+      grafico = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.modelos,
+          datasets: [{
+            label: 'Quantidade por Modelo',
+            data: data.quantidades,
+            backgroundColor: '#1d4ed8'
+          }]
         },
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: 'Peças' } }
+        options: {
+          indexAxis: 'y',
+          scales: {
+            x: { beginAtZero: true }
+          }
         }
-      }
+      });
     });
   </script>
+
 </body>
 </html>

@@ -132,16 +132,24 @@ def resumo_por_operador(
         for linha in resultado
     ]
 
-# ===== Cadastrar ou atualizar valor de modelo =====
 @app.get("/valores_modelos", response_class=HTMLResponse)
 async def listar_valores_modelos(request: Request):
     db = SessionLocal()
     valores = db.query(ValorModelo).order_by(ValorModelo.modelo.asc()).all()
+
+    # 🔹 busca todos os modelos das tabelas fichas e produção
+    modelos_fichas = db.query(Ficha.modelo).distinct().all()
+    modelos_producao = db.query(Producao.modelo).distinct().all()
+
+    # 🔹 junta e remove duplicados
+    modelos = sorted(set([m[0] for m in modelos_fichas + modelos_producao if m[0]]))
+
     db.close()
 
     return templates.TemplateResponse("valores_modelos.html", {
         "request": request,
-        "valores": valores
+        "valores": valores,
+        "modelos": modelos
     })
 
 
@@ -464,3 +472,56 @@ async def formulario_operador_post(request: Request):
 @app.get("/funcionarios", response_class=HTMLResponse)
 async def funcionarios_page(request: Request):
     return templates.TemplateResponse("funcionarios.html", {"request": request})
+
+# ==== CONSULTA DE PRODUÇÃO ====
+from sqlalchemy import func
+from fastapi.responses import JSONResponse
+
+@app.get("/consultar_producao", response_class=HTMLResponse)
+async def consultar_producao_page(request: Request):
+    db = SessionLocal()
+    operadores = db.query(Producao.operador).distinct().order_by(Producao.operador.asc()).all()
+    modelos = db.query(Producao.modelo).distinct().order_by(Producao.modelo.asc()).all()
+    db.close()
+
+    return templates.TemplateResponse("consultar_producao.html", {
+        "request": request,
+        "operadores": [o[0] for o in operadores],
+        "modelos": [m[0] for m in modelos]
+    })
+
+
+@app.post("/consultar_producao_dados")
+async def consultar_producao_dados(
+    operador: str = Form(""),
+    data_inicial: str = Form(""),
+    data_final: str = Form("")
+):
+    db = SessionLocal()
+
+    query = db.query(
+        Producao.modelo,
+        func.sum(Producao.quantidade).label("total_pecas"),
+        func.sum(Producao.valor).label("total_valor")
+    )
+
+    if operador:
+        query = query.filter(Producao.operador.ilike(f"%{operador}%"))
+    if data_inicial:
+        query = query.filter(Producao.criado_em >= data_inicial)
+    if data_final:
+        query = query.filter(Producao.criado_em <= data_final)
+
+    query = query.group_by(Producao.modelo).order_by(func.sum(Producao.quantidade).desc())
+
+    resultados = query.all()
+
+    db.close()
+
+    data = {
+        "modelos": [r.modelo for r in resultados],
+        "quantidades": [int(r.total_pecas or 0) for r in resultados],
+        "valores": [float(r.total_valor or 0) for r in resultados],
+    }
+
+    return JSONResponse(content=data)
