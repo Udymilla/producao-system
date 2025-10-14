@@ -424,3 +424,7 @@ async def formulario_operador_post(request: Request):
         "qr_code": qr_code_base64,
         "numero_ficha": numero_ficha
     })
+
+@app.get("/funcionarios", response_class=HTMLResponse)
+async def funcionarios_page(request: Request):
+    return templates.TemplateResponse("funcionarios.html", {"request": request})
