@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Responder Ficha{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-6 mt-6">
+  <h1 class="text-2xl font-bold text-blue-700 mb-4">Responder Ficha</h1>
+
+  <form method="post" action="/responder_ficha" class="space-y-4">
+    <input type="hidden" name="token" value="{{token}}">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Número da Ficha</label>
+        <input class="w-full border rounded px-3 py-2 bg-gray-100" value="{{numero_ficha}}" readonly>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Quantidade</label>
+        <input class="w-full border rounded px-3 py-2 bg-gray-100" value="{{quantidade}}" readonly>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Modelo</label>
+      <input class="w-full border rounded px-3 py-2 bg-gray-100" value="{{modelo}}" readonly>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">Operador</label>
+        <input name="operador" class="w-full border rounded px-3 py-2" value="{{operador}}" placeholder="Digite seu nome" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Função</label>
+        <select name="funcao" class="w-full border rounded px-3 py-2" required>
+          <option value="" disabled selected>Selecione...</option>
+          {% for f in funcoes %}
+            <option>{{f}}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <button class="mt-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded">
+      Lançar Produção
+    </button>
+  </form>
+</div>
+{% endblock %}
+

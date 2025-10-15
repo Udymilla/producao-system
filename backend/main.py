@@ -665,3 +665,211 @@ async def consultar_producao_dados(
     }
 
     return JSONResponse(content=data)
+
+    # ==============================
+# IMPORTS (deixe junto dos demais)
+# ==============================
+import secrets
+from io import BytesIO
+from fastapi.responses import StreamingResponse
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import cm
+
+# vamos usar o catálogo de modelos em "formularios"
+from backend.models import Formulario
+
+# ------------------------------
+# util: próxima ficha (começa em 8000)
+# ------------------------------
+def proxima_ficha_numero(db: Session) -> int:
+    """
+    Busca o maior numero_ficha (inteiro) na tabela e retorna próximo.
+    Se não houver, começa em 8000.
+    """
+    ultimo = db.query(Ficha).order_by(Ficha.id.desc()).first()
+    if not ultimo or not str(ultimo.numero_ficha).isdigit():
+        return 8000
+    n = int(ultimo.numero_ficha)
+    return max(8000, n + 1)
+
+# ------------------------------
+# util: quantidade padrão por modelo
+# ------------------------------
+def quantidade_padrao_por_modelo(nome_modelo: str) -> int:
+    # regra solicitada: luvas = 50; acessórios = 20
+    if "LUVA" in (nome_modelo or "").upper():
+        return 50
+    return 20
+
+# ==========================================================
+# PÁGINA: GERAR FICHAS (admin)
+# ==========================================================
+@app.get("/gerar_fichas", response_class=HTMLResponse)
+async def gerar_fichas_page(request: Request):
+    db = SessionLocal()
+    # pega os nomes de modelos ativos (catálogo)
+    modelos = db.query(Formulario.nome_modelo).filter(Formulario.ativo == True).order_by(Formulario.nome_modelo.asc()).all()
+    db.close()
+    modelos = [m[0] for m in modelos]
+    return templates.TemplateResponse("gerar_fichas.html", {"request": request, "modelos": modelos})
+
+@app.post("/gerar_fichas_pdf")
+async def gerar_fichas_pdf(
+    request: Request,
+    modelo: str = Form(...),
+    qtd_fichas: int = Form(...),
+):
+    db = SessionLocal()
+
+    # vamos gerar 'qtd_fichas' novas fichas, com números sequenciais
+    primeiro_numero = proxima_ficha_numero(db)
+    numeracoes = [primeiro_numero + i for i in range(qtd_fichas)]
+
+    # gera um token único por ficha + cria no banco
+    fichas_criadas = []
+    for numero in numeracoes:
+        token = secrets.token_urlsafe(16)
+        qtd = quantidade_padrao_por_modelo(modelo)
+
+        ficha = Ficha(
+            numero_ficha=str(numero),
+            modelo=modelo,
+            quantidade_total=qtd,
+            setor_atual=None,
+            token_qr=token
+        )
+        db.add(ficha)
+        fichas_criadas.append((numero, token, qtd, modelo))
+    db.commit()
+
+    # cria um PDF em memória (1 por página, topo centralizado, com QR)
+    # QR aponta para /responder_ficha?token=...
+    buffer = BytesIO()
+    w, h = A4
+    c = canvas.Canvas(buffer, pagesize=A4)
+
+    for numero, token, qtd, mod in fichas_criadas:
+        # título centralizado no topo
+        titulo = f"FICHA {numero}"
+        c.setFont("Helvetica-Bold", 22)
+        c.drawCentredString(w/2, h - 3*cm, titulo)
+
+        # infos
+        c.setFont("Helvetica", 14)
+        c.drawCentredString(w/2, h - 4.2*cm, f"Modelo: {mod}")
+        c.drawCentredString(w/2, h - 5.2*cm, f"Quantidade: {qtd}")
+
+        # QR Code para /responder_ficha
+        url = f"http://127.0.0.1:8000/responder_ficha?token={token}"
+        # gerar o PNG do QR em memória
+        import qrcode
+        qimg = qrcode.make(url)
+        qr_bytes = BytesIO()
+        qimg.save(qr_bytes, format="PNG")
+        qr_bytes.seek(0)
+
+        # desenhar o QR no PDF (centro)
+        qr_size = 5*cm
+        x = (w - qr_size)/2
+        y = h - 11*cm
+        c.drawInlineImage(qr_bytes, x, y, qr_size, qr_size)
+
+        # rodapé simples
+        c.setFont("Helvetica-Oblique", 10)
+        c.drawCentredString(w/2, 1.8*cm, "Escaneie o QR para lançar a produção desta ficha.")
+
+        c.showPage()
+
+    c.save()
+    buffer.seek(0)
+
+    # retorna como download
+    filename = f"fichas_{primeiro_numero}_ate_{numeracoes[-1]}.pdf"
+    return StreamingResponse(buffer, media_type="application/pdf", headers={
+        "Content-Disposition": f'inline; filename="{filename}"'
+    })
+
+# ==========================================================
+# FORMULÁRIO DO QR (responder ficha)
+# ==========================================================
+FUNCOES_OPCOES = [
+    "CORTADOR","AMONTOADOR","COLADOR","REFORCADOR","REFILAR","PASSAR","PASSAR LUVA",
+    "REVISAR E EMPACOTAR","VIRADOR","BAIXA COSTURA","EMENDAR DORSO","FECHAR LUVA",
+    "LUVA COMPLETA","PASSAR VIES","PREGAR OVO + ELASTICO",
+    "FECHAR LUVA + PREGAR PUNHO MALHA","PREGAR OVO","PREGAR ELASTICO",
+    "PREGAR DORSO + FIVELA","PREGAR FORCHETA","PREGAR DEDÃO","PREGAR DEDAO"
+]
+
+@app.get("/responder_ficha", response_class=HTMLResponse)
+async def responder_ficha_page(request: Request, token: str):
+    db = SessionLocal()
+    ficha = db.query(Ficha).filter(Ficha.token_qr == token).first()
+    db.close()
+    if not ficha:
+        return HTMLResponse("<h3>Ficha não encontrada ou QR inválido.</h3>", status_code=404)
+
+    operador_logado = request.session.get("operador") or request.session.get("usuario")
+    return templates.TemplateResponse("responder_ficha_operador.html", {
+        "request": request,
+        "numero_ficha": ficha.numero_ficha,
+        "modelo": ficha.modelo,
+        "quantidade": ficha.quantidade_total,
+        "operador": operador_logado or "",
+        "funcoes": FUNCOES_OPCOES,
+        "token": token
+    })
+uvicorn backend.main:app --reload
+@app.post("/responder_ficha", response_class=HTMLResponse)
+async def responder_ficha_submit(
+    request: Request,
+    token: str = Form(...),
+    operador: str = Form(...),
+    funcao: str = Form(...),
+):
+    db = SessionLocal()
+    ficha = db.query(Ficha).filter(Ficha.token_qr == token).first()
+    if not ficha:
+        db.close()
+        return HTMLResponse("<h3>Ficha não encontrada.</h3>", status_code=404)
+
+    # grava a produção (uma linha por ficha lançada)
+    lanc = Producao(
+        ficha_id=ficha.id,
+        operador=operador,
+        modelo=ficha.modelo,
+        servico=funcao,
+        tamanho=None,
+        quantidade=ficha.quantidade_total,
+        valor=0.0  # se tiver regra de valor por modelo, dá pra calcular aqui
+    )
+    db.add(lanc)
+    db.commit()
+    db.close()
+
+    # confirma
+    return templates.TemplateResponse("pagina.html", {
+        "request": request,
+        "titulo": "Produção lançada ✅",
+        "mensagem": f"Ficha {ficha.numero_ficha} lançada para {operador} ({funcao}) – {ficha.quantidade_total} peças do modelo {ficha.modelo}."
+    })
+
+@app.get("/cadastrar_modelos", response_class=HTMLResponse)
+async def cadastrar_modelos_page(request: Request):
+    return templates.TemplateResponse("cadastrar_modelos.html", {"request": request})
+
+@app.post("/cadastrar_modelo", response_class=HTMLResponse)
+async def cadastrar_modelo(request: Request, modelo: str = Form(...), valor: float = Form(...)):
+    db = SessionLocal()
+    existente = db.query(ValorModelo).filter(ValorModelo.modelo == modelo).first()
+    if existente:
+        existente.valor_unitario = valor
+    else:
+        db.add(ValorModelo(modelo=modelo, valor_unitario=valor))
+    db.commit()
+    db.close()
+    return templates.TemplateResponse("cadastrar_modelos.html", {
+        "request": request,
+        "mensagem": f"Modelo <b>{modelo}</b> salvo com sucesso (R$ {valor:.2f})."
+    })
+

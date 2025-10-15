@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Sistema de Produção Dadalto{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/5959/5959498.png">
+</head>
+
+<body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col">
+  <!-- HEADER -->
+  <header class="bg-blue-700 text-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold">Sistema de Produção Dadalto</h1>
+      <div class="flex items-center gap-3">
+        {% if usuario %}
+          <span class="text-sm">👋 {{ usuario }}{% if perfil %} ({{ perfil }}){% endif %}</span>
+        {% endif %}
+        <a href="/logout" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Sair</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="flex-1 max-w-6xl mx-auto w-full p-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- RODAPÉ -->
+  <footer class="bg-gray-200 text-center text-sm text-gray-600 py-4">
+    © 2025 Dadalto Couro — Sistema de Produção Interno
+  </footer>
+</body>
+</html>
