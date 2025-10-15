@@ -16,12 +16,11 @@
 
         <div class="flex gap-3">
             <!-- Mostrar o botão de valores apenas se o perfil for admin ou líder -->
-            {% if perfil in ["administrador", "lider"] %}
-            <a href="/valores_modelos"
-               class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center">
-                💰 Valores por Modelo
-            </a>
-            {% endif %}
+           <div class="text-right">
+        <a href="/valores_modelos" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+            💰 Painel de Valores
+        </a>
+    </div>
 
             <!-- Botão de voltar -->
             <a href="/dashboard"

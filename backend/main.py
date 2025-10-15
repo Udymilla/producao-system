@@ -8,6 +8,7 @@ from backend.database import SessionLocal, engine, Base
 from backend.models import Producao, Ficha, Usuario, UsuarioOperacional, ValorModelo
 from backend.schemas import ProducaoCreate, ProducaoResponse
 from typing import List
+from starlette.middleware.sessions import SessionMiddleware
 import qrcode
 import io
 import base64
@@ -15,8 +16,11 @@ import base64
 # Cria as tabelas se ainda não existirem
 Base.metadata.create_all(bind=engine)
 
-
+# Cria o app
 app = FastAPI(title="Sistema de Produção Dadalto")
+
+# Adiciona o middleware de sessão
+app.add_middleware(SessionMiddleware, secret_key="supersegredo123")
 
 # Configuração de templates e arquivos estáticos
 app.mount("/static", StaticFiles(directory="backend/frontend/static"), name="static")
@@ -221,9 +225,11 @@ def lancar_producao(dados: ProducaoCreate, db: Session = Depends(get_db)):
     db.refresh(nova_ficha)
     return nova_ficha
 
+# ===== LOGIN =====
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "erro": False})
+
 
 @app.post("/login", response_class=HTMLResponse)
 async def login_post(request: Request, usuario: str = Form(...), senha: str = Form(...)):
@@ -231,31 +237,36 @@ async def login_post(request: Request, usuario: str = Form(...), senha: str = Fo
     user = db.query(Usuario).filter_by(nome=usuario, senha=senha).first()
     db.close()
 
+    # Se usuário não existe → erro
     if not user:
         return templates.TemplateResponse(
             "login.html",
             {"request": request, "erro": True}
         )
 
-    # Redireciona conforme perfil do usuário
-    if user.perfil.lower() == "administrador":
-        return RedirectResponse(url="/administracao", status_code=303)
-    else:
-        return RedirectResponse(
-            url=f"/dashboard?user={user.nome}&perfil={user.perfil}",
-            status_code=303
-            )
+    # Se encontrou → cria sessão
+    response = RedirectResponse(url="/dashboard", status_code=303)
+    request.session["usuario"] = user.nome
+    request.session["perfil"] = user.perfil
+    return response
+
 
 @app.get("/logout")
 async def logout():
     return RedirectResponse(url="/login")
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, user: str = "", perfil: str = ""):
+async def dashboard(request: Request):
+    usuario = request.session.get("usuario")
+    perfil = request.session.get("perfil")
+
+    if not usuario:
+        return RedirectResponse(url="/login")
+
     return templates.TemplateResponse("dashboard.html", {
         "request": request,
-        "usuario": user.capitalize(),
-        "perfil": perfil.capitalize()
+        "usuario": usuario,
+        "perfil": perfil
     })
 
     # ==== Páginas do sistema (placeholders) ====
@@ -322,10 +333,10 @@ async def lancar_post(request: Request):
         "mensagem": f"Ficha lançada para {operador} - {modelo} ({quantidade} peças)"
     })
 
-# Página de consulta de fichas
 @app.get("/consultar_fichas", response_class=HTMLResponse)
 async def consultar_fichas(request: Request):
-    return templates.TemplateResponse("consultar_fichas.html", {"request": request})
+    perfil = request.session.get("perfil", "")
+    return templates.TemplateResponse("consultar_fichas.html", {"request": request, "perfil": perfil})
 
 # Página de consulta de produção por funcionário
 @app.get("/consultar_producao", response_class=HTMLResponse)
@@ -420,24 +431,154 @@ async def login_operador_post(request: Request):
             {"request": request, "erro": "Usuário ou senha incorretos"}
         )
 
-    return RedirectResponse(url="/formulario_operador", status_code=302)
+    # ========= GERAR FICHA + QR (usado por líder/admin na tela do operador) =========
 @app.get("/formulario_operador", response_class=HTMLResponse)
 async def formulario_operador_page(request: Request):
-    # Simulação temporária do operador logado
-    operador = "Luana"
-    funcao = "ACABAMENTO"
-    return templates.TemplateResponse("formulario_operador.html", {"request": request, "operador": operador, "funcao": funcao})
-
+    # tela simples só para gerar a ficha e o QR (pode personalizar depois)
+    return templates.TemplateResponse("formulario_operador.html", {"request": request})
 
 @app.post("/formulario_operador", response_class=HTMLResponse)
 async def formulario_operador_post(request: Request):
     form = await request.form()
-    operador = form.get("operador")
-    funcao = form.get("funcao")
-    modelo = form.get("modelo")
-    quantidade = int(form.get("quantidade"))
+    operador = (form.get("operador") or "").strip()
+    funcao = (form.get("funcao") or "").strip()
+    modelo = (form.get("modelo") or "").strip()
+    quantidade_total = int(form.get("quantidade") or 0)
 
     db = SessionLocal()
+
+    # número sequencial da ficha (F0001, F0002…)
+    ultima = db.query(Ficha).order_by(Ficha.id.desc()).first()
+    if not ultima:
+        numero_ficha = "F0001"
+    else:
+        numero_ficha = f"F{int(ultima.numero_ficha[1:]) + 1:04d}"
+
+    # token único para o QR
+    token = secrets.token_urlsafe(16)
+
+    nova_ficha = Ficha(
+        numero_ficha=numero_ficha,
+        modelo=modelo,
+        funcao=funcao,
+        quantidade_total=quantidade_total,
+        setor_atual=funcao,
+        token_qr=token,                   # <<< guarda o token para validar
+        status=StatusFicha.EM_PRODUCAO,
+    )
+    db.add(nova_ficha)
+    db.commit()
+    db.refresh(nova_ficha)
+
+    # link que o QR vai abrir no celular do operador
+    url_form = request.url_for("responder_ficha_qr") + f"?token={token}"
+
+    # gera QR (PNG em base64 para exibir na página)
+    img = qrcode.make(url_form)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    qr_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+    db.close()
+
+    return templates.TemplateResponse(
+        "formulario_operador.html",
+        {
+            "request": request,
+            "operador": operador,
+            "funcao": funcao,
+            "numero_ficha": numero_ficha,
+            "modelo": modelo,
+            "url_form": url_form,
+            "qr_code": qr_b64,
+        },
+    )
+
+
+# ========= FORMULÁRIO ABERTO PELO QR (GET exibe; POST grava) =========
+@app.get("/responder_ficha", name="responder_ficha_qr", response_class=HTMLResponse)
+async def responder_ficha_qr_get(request: Request, token: str):
+    db = SessionLocal()
+    ficha = db.query(Ficha).filter(Ficha.token_qr == token).first()
+    db.close()
+
+    if not ficha:
+        # token inválido/expirado
+        return templates.TemplateResponse(
+            "pagina.html",
+            {"request": request, "titulo": "QR inválido", "mensagem": "Ficha não encontrada ou QR expirado."},
+        )
+
+    # monta o form com dados da ficha
+    return templates.TemplateResponse(
+        "form_qr.html",
+        {
+            "request": request,
+            "token": token,
+            "numero_ficha": ficha.numero_ficha,
+            "modelo": ficha.modelo,
+            "funcao_padrao": ficha.funcao,
+        },
+    )
+
+
+@app.post("/responder_ficha", response_class=HTMLResponse)
+async def responder_ficha_qr_post(
+    request: Request,
+    token: str = Form(...),
+    operador: str = Form(...),
+    funcao: str = Form(...),
+    modelo: str = Form(...),
+    quantidade: int = Form(...)
+):
+    db = SessionLocal()
+
+    ficha = db.query(Ficha).filter(Ficha.token_qr == token).first()
+    if not ficha:
+        db.close()
+        return templates.TemplateResponse(
+            "pagina.html",
+            {"request": request, "titulo": "Erro", "mensagem": "QR inválido ou ficha não encontrada."},
+        )
+
+    # calcula valor pelo tabela valores_modelos (se existir)
+    vm = db.query(ValorModelo).filter(ValorModelo.modelo == modelo).first()
+    valor_unit = float(vm.valor_unitario) if vm else 0.0
+    valor_total = valor_unit * quantidade
+
+    lanc = Producao(
+        ficha_id=ficha.id,
+        usuario_id=None,              # se quiser, você pode buscar id do usuário operacional
+        operador=operador,
+        modelo=modelo,
+        servico=funcao,
+        tamanho=None,
+        quantidade=quantidade,
+        valor=valor_total,
+        criado_em=datetime.utcnow(),
+    )
+    db.add(lanc)
+
+    # opcional: se quiser “consumir” o QR para impedir reenvio, descomente:
+    # ficha.token_qr = None
+    # ficha.status = StatusFicha.FINALIZADA
+
+    db.commit()
+    db.close()
+
+    return templates.TemplateResponse(
+        "pagina.html",
+        {
+            "request": request,
+            "titulo": "Lançamento registrado ✅",
+            "mensagem": (
+                f"Ficha <b>{ficha.numero_ficha}</b> – Modelo <b>{modelo}</b><br>"
+                f"Operador: <b>{operador}</b> | Função: <b>{funcao}</b><br>"
+                f"Quantidade: <b>{quantidade}</b><br>"
+                f"Valor total: <b>R$ {valor_total:,.2f}</b>"
+            ),
+        },
+    )
 
     # Gera número da ficha (última +1)
     ultimo = db.query(Ficha).order_by(Ficha.id.desc()).first()
