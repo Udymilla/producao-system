@@ -3,67 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cadastro de Formulários - Sistema Dadalto</title>
+  <title>Cadastro de Modelos</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
 
-<body class="bg-gray-100 min-h-screen flex flex-col">
+  <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg">
+    <h1 class="text-2xl font-bold text-center text-blue-700 mb-6">
+      Cadastro de Modelos
+    </h1>
 
-  <!-- Cabeçalho -->
-  <header class="bg-blue-800 text-white py-4 shadow-md">
-    <div class="container mx-auto flex justify-between items-center px-6">
-      <h1 class="text-2xl font-bold tracking-wide">Cadastro de Formulários</h1>
-      <a href="/dashboard" class="text-sm bg-gray-200 text-blue-800 px-3 py-1 rounded hover:bg-gray-300 transition">⬅ Voltar</a>
-    </div>
-  </header>
-
-  <!-- Formulário -->
-  <main class="flex-1 flex justify-center items-start py-10">
-    <form method="post" action="/cadastro_formulario" class="bg-white shadow-md rounded-xl p-8 w-full max-w-xl">
-      <h2 class="text-xl font-semibold text-gray-700 mb-6">Novo Modelo</h2>
-
-      <!-- Nome -->
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Nome do Modelo:</label>
-        <input name="modelo" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: CAMISA OPERACIONAL" required>
+    <form action="/cadastro_formulario" method="post" class="space-y-4">
+      <div>
+        <label class="block text-gray-700 font-semibold">Nome do Modelo:</label>
+        <input type="text" name="nome_modelo" required placeholder="Ex: LUVA FORCHETA P"
+               class="w-full border rounded px-3 py-2">
       </div>
 
-      <!-- Cor -->
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Cor (opcional):</label>
-        <input name="cor" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: Azul / Cinza">
+      <div>
+        <label class="block text-gray-700 font-semibold">Cor (opcional):</label>
+        <input type="text" name="cor" placeholder="Ex: Cinza / Azul"
+               class="w-full border rounded px-3 py-2">
       </div>
 
-      <!-- Tamanhos -->
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Tamanhos disponíveis:</label>
-        <div class="grid grid-cols-3 gap-2 text-gray-700">
-          <label><input type="checkbox" name="tamanhos" value="PP" class="mr-1"> PP</label>
-          <label><input type="checkbox" name="tamanhos" value="P" class="mr-1"> P</label>
-          <label><input type="checkbox" name="tamanhos" value="M" class="mr-1"> M</label>
-          <label><input type="checkbox" name="tamanhos" value="G" class="mr-1"> G</label>
-          <label><input type="checkbox" name="tamanhos" value="GG" class="mr-1"> GG</label>
-          <label><input type="checkbox" name="tamanhos" value="XG" class="mr-1"> XG</label>
-          <label><input type="checkbox" name="tamanhos" value="XG2" class="mr-1"> XG2</label>
+      <div>
+        <label class="block text-gray-700 font-semibold mb-2">Tamanhos disponíveis:</label>
+        <div class="grid grid-cols-3 gap-2 text-sm">
+          <label><input type="checkbox" name="tamanhos" value="PP"> PP</label>
+          <label><input type="checkbox" name="tamanhos" value="P"> P</label>
+          <label><input type="checkbox" name="tamanhos" value="M"> M</label>
+          <label><input type="checkbox" name="tamanhos" value="G"> G</label>
+          <label><input type="checkbox" name="tamanhos" value="GG"> GG</label>
+          <label><input type="checkbox" name="tamanhos" value="XG"> XG</label>
+          <label><input type="checkbox" name="tamanhos" value="XG2"> XG2</label>
         </div>
       </div>
 
-      <!-- Link -->
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Link do Formulário:</label>
-        <input name="link" type="url" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Cole aqui o link do Google Forms" required>
-      </div>
-
-      <div class="flex justify-end mt-6">
-        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Salvar</button>
-      </div>
+      <button type="submit"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded">
+        Salvar Modelo
+      </button>
     </form>
-  </main>
 
-  <!-- Rodapé -->
-  <footer class="bg-gray-100 py-4 text-center text-sm text-gray-500 border-t">
-    © 2025 Dadalto Couro · Sistema de Produção Interno
-  </footer>
+    {% if mensagem %}
+      <p class="text-center text-green-600 mt-4">{{ mensagem | safe }}</p>
+    {% endif %}
+
+    <hr class="my-6">
+
+    <h2 class="text-lg font-semibold text-gray-700 mb-2">Modelos Cadastrados</h2>
+    <ul class="divide-y">
+      {% for modelo in modelos %}
+      <li class="py-2">
+        <b>{{ modelo.nome_modelo }}</b>
+        <span class="text-sm text-gray-500">({{ modelo.tamanhos or 'Sem tamanhos' }})</span>
+      </li>
+      {% else %}
+      <li class="text-gray-500 text-sm italic">Nenhum modelo cadastrado ainda.</li>
+      {% endfor %}
+    </ul>
+  </div>
 
 </body>
 </html>
