@@ -704,12 +704,17 @@ def quantidade_padrao_por_modelo(nome_modelo: str) -> int:
     if "LUVA" in (nome_modelo or "").upper():
         return 50
     return 20
-
+# ==============================
+# GERAR FICHAS (com PDF e QR)
+# ==============================
+from fastapi.responses import FileResponse
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
-import qrcode, io, base64, uuid
-from fastapi.responses import FileResponse
+from reportlab.lib.utils import ImageReader
+import qrcode
+import io
+import uuid
 
 @app.get("/gerar_fichas", response_class=HTMLResponse)
 async def gerar_fichas_page(request: Request):
@@ -726,51 +731,60 @@ async def gerar_fichas_page(request: Request):
 async def gerar_fichas(request: Request, modelo: str = Form(...), qtd_fichas: int = Form(...)):
     db = SessionLocal()
 
-    ultima = db.query(Ficha).order_by(Ficha.id.desc()).first()
-    proximo_numero = 8000 if not ultima else int(ultima.numero_ficha) + 1
+    # pega a última ficha
+    ultima_ficha = db.query(Ficha).order_by(Ficha.id.desc()).first()
+    proximo_numero = 8000 if not ultima_ficha else int(ultima_ficha.numero_ficha) + 1
+
+    # define quantidade padrão por tipo
+    quantidade = 50 if "LUVA" in modelo.upper() else 20
 
     fichas = []
-    for i in range(qtd_fichas):
-        numero_ficha = str(proximo_numero + i)
-        token = str(uuid.uuid4())
 
-        nova_ficha = Ficha(
-            numero_ficha=numero_ficha,
+    # gera e salva no banco
+    for i in range(qtd_fichas):
+        token = str(uuid.uuid4())
+        nova = Ficha(
+            numero_ficha=str(proximo_numero + i),
             modelo=modelo,
-            modelo_nome=modelo,
-            funcao="",
-            quantidade_total=50 if "LUVA" in modelo.upper() else 20,
+            funcao="GERAL",           # ✅ valor padrão, evita NULL
+            quantidade_total=quantidade,
+            setor_atual="CORTE",      # opcional, ou defina outro setor inicial
             token_qr=token
         )
-        db.add(nova_ficha)
-        db.commit()
-        fichas.append(nova_ficha)
+        db.add(nova)
+        fichas.append(nova)
+
+    db.commit()
 
     # === Geração do PDF ===
     pdf_path = "fichas_geradas.pdf"
     c = canvas.Canvas(pdf_path, pagesize=A4)
 
     for ficha in fichas:
-        qr_url = f"http://127.0.0.1:8000/formulario_operador?token={ficha.token_qr}"
+        qr_url = f"http://127.0.0.1:8000/responder_ficha?token={ficha.token_qr}"
         qr_img = qrcode.make(qr_url)
         buffer = io.BytesIO()
         qr_img.save(buffer, format="PNG")
-        qr_data = buffer.getvalue()
+        buffer.seek(0)
+        qr_image = ImageReader(buffer)
 
+        # Cabeçalho
         c.setFont("Helvetica-Bold", 24)
-        c.drawCentredString(10.5 * cm, 26 * cm, f"Ficha Nº {ficha.numero_ficha}")
+        c.drawCentredString(10.5 * cm, 27 * cm, f"FICHA Nº {ficha.numero_ficha}")
         c.setFont("Helvetica", 18)
-        c.drawCentredString(10.5 * cm, 24 * cm, f"Modelo: {ficha.modelo_nome}")
+        c.drawCentredString(10.5 * cm, 25 * cm, f"MODELO: {ficha.modelo}")
         c.setFont("Helvetica", 16)
-        c.drawCentredString(10.5 * cm, 22.5 * cm, f"Quantidade: {ficha.quantidade_total} peças")
+        c.drawCentredString(10.5 * cm, 23.5 * cm, f"QUANTIDADE: {ficha.quantidade_total} PEÇAS")
 
-        c.drawInlineImage(qr_data, 7 * cm, 12 * cm, width=7*cm, height=7*cm)
+        # QR centralizado
+        c.drawImage(qr_image, 6.5 * cm, 13 * cm, width=8 * cm, height=8 * cm)
         c.showPage()
 
     c.save()
     db.close()
 
     return FileResponse(pdf_path, filename="fichas_geradas.pdf", media_type="application/pdf")
+   
 # ==========================================================
 # FORMULÁRIO DO QR (responder ficha)
 # ==========================================================
