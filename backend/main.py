@@ -463,12 +463,12 @@ async def login_operador_post(request: Request):
 
 @app.post("/responder_ficha", response_class=HTMLResponse)
 async def responder_ficha(request: Request,
-                          token_qr: str = Form(...),
+                          token: str = Form(...),
                           operador: str = Form(...),
                           funcao: str = Form(...),
                           db: Session = Depends(get_db)):
 
-    ficha = db.query(Ficha).filter(Ficha.token_qr == token_qr).first()
+    ficha = db.query(Ficha).filter(Ficha.token_qr== token).first()
     if not ficha:
         return templates.TemplateResponse("formulario_operador.html", {
             "request": request,
@@ -476,14 +476,14 @@ async def responder_ficha(request: Request,
         })
 
     # pega o valor unitário do modelo
-    valor_registro = db.query(ValorModelo).filter(ValorModelo.modelo == ficha.modelo_nome).first()
+    valor_registro = db.query(ValorModelo).filter(ValorModelo.modelo == ficha.modelo).first()
     valor_unitario = valor_registro.valor_unitario if valor_registro else 0
 
     # cria o registro de produção
     nova_producao = Producao(
         ficha_id=ficha.id,
         operador=operador,
-        modelo=ficha.modelo_nome,
+        modelo=ficha.modelo,
         servico=funcao,
         tamanho="",
         quantidade=ficha.quantidade_total,
@@ -502,7 +502,7 @@ async def responder_ficha(request: Request,
 @app.get("/responder_ficha", name="responder_ficha_qr", response_class=HTMLResponse)
 async def responder_ficha_qr_get(request: Request, token: str):
     db = SessionLocal()
-    ficha = db.query(Ficha).filter(Ficha.token_qr == token).first()
+    ficha = db.query(Ficha).filter(Ficha.token_qr== token).first()
     db.close()
 
     if not ficha:
@@ -563,7 +563,7 @@ async def responder_ficha_qr_post(
     db.add(lanc)
 
     # opcional: se quiser “consumir” o QR para impedir reenvio, descomente:
-    # ficha.token_qr = None
+    # ficha.token = None
     # ficha.status = StatusFicha.FINALIZADA
 
     db.commit()
@@ -749,7 +749,7 @@ async def gerar_fichas(request: Request, modelo: str = Form(...), qtd_fichas: in
             funcao="GERAL",           # ✅ valor padrão, evita NULL
             quantidade_total=quantidade,
             setor_atual="CORTE",      # opcional, ou defina outro setor inicial
-            token_qr=token
+            token=token
         )
         db.add(nova)
         fichas.append(nova)
@@ -761,7 +761,7 @@ async def gerar_fichas(request: Request, modelo: str = Form(...), qtd_fichas: in
     c = canvas.Canvas(pdf_path, pagesize=A4)
 
     for ficha in fichas:
-        qr_url = f"http://127.0.0.1:8000/responder_ficha?token={ficha.token_qr}"
+        qr_url = f"http://127.0.0.1:8000/responder_ficha?token={ficha.token}"
         qr_img = qrcode.make(qr_url)
         buffer = io.BytesIO()
         qr_img.save(buffer, format="PNG")
@@ -799,7 +799,7 @@ FUNCOES_OPCOES = [
 @app.get("/responder_ficha", response_class=HTMLResponse)
 async def responder_ficha_page(request: Request, token: str):
     db = SessionLocal()
-    ficha = db.query(Ficha).filter(Ficha.token_qr == token).first()
+    ficha = db.query(Ficha).filter(Ficha.token_qr== token).first()
     db.close()
     if not ficha:
         return HTMLResponse("<h3>Ficha não encontrada ou QR inválido.</h3>", status_code=404)
@@ -823,26 +823,27 @@ async def responder_ficha_submit(
     funcao: str = Form(...),
 ):
     db = SessionLocal()
-    ficha = db.query(Ficha).filter(Ficha.token_qr == token).first()
+    ficha = db.query(Ficha).filter(Ficha.token_qr== token).first()
+
     if not ficha:
         db.close()
         return HTMLResponse("<h3>Ficha não encontrada.</h3>", status_code=404)
 
-    # grava a produção (uma linha por ficha lançada)
-    lanc = Producao(
+    # grava a produção
+    nova_producao = Producao(
         ficha_id=ficha.id,
         operador=operador,
         modelo=ficha.modelo,
         servico=funcao,
         tamanho=None,
         quantidade=ficha.quantidade_total,
-        valor=0.0  # se tiver regra de valor por modelo, dá pra calcular aqui
+        valor=0.0  # se quiser, calculamos depois com tabela de valores
     )
-    db.add(lanc)
+
+    db.add(nova_producao)
     db.commit()
     db.close()
 
-    # confirma
     return templates.TemplateResponse("pagina.html", {
         "request": request,
         "titulo": "Produção lançada ✅",

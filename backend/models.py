@@ -65,7 +65,7 @@ class Ficha(Base):
     quantidade_total = Column(Integer, nullable=False)
     setor_atual = Column(String, nullable=True)
     status = Column(Enum(StatusFicha), default=StatusFicha.EM_PRODUCAO)
-    token_qr = Column(String(64), unique=True, nullable=True)
+    token_qr= Column(String(64), unique=True, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
 
     # relação com produções

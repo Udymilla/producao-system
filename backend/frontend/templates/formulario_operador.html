@@ -16,7 +16,7 @@
     {% if ficha %}
     <form action="/responder_ficha" method="post" class="space-y-4">
 
-      <input type="hidden" name="token_qr" value="{{ ficha.token_qr }}">
+      <input type="hidden" name="token" value="{{ ficha.token }}">
 
       <div>
         <label class="block text-gray-700 font-semibold">Número da Ficha:</label>
@@ -26,7 +26,7 @@
 
       <div>
         <label class="block text-gray-700 font-semibold">Modelo:</label>
-        <input type="text" value="{{ ficha.modelo_nome }}" readonly
+        <input type="text" value="{{ ficha.modelo}}" readonly
                class="w-full bg-gray-100 border rounded px-3 py-2">
       </div>
 
