@@ -8,3 +8,5 @@ DATABASE_URL = "postgresql+psycopg2://postgres:1234@localhost/producao"
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+Base.metadata.create_all(bind=engine)

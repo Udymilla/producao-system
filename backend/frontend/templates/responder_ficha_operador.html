@@ -2,47 +2,111 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Responder Ficha</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>Responder Ficha - {{ ficha.modelo }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f4f7;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .imagem-box {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .imagem-box img {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        .dados {
+            margin-bottom: 20px;
+            background: #f9fafc;
+            border-radius: 8px;
+            padding: 12px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+        button {
+            width: 100%;
+            background: #004aad;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 16px;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #003c8f;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
-        <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">
-            Ficha Nº {{ numero_ficha }}
-        </h1>
+<body>
+    <div class="container">
+        <h1>Ficha {{ ficha.numero_ficha }}</h1>
 
-        <p class="text-center text-gray-600 mb-4">
-            Modelo: <b>{{ modelo }}</b><br>
-            Quantidade: <b>{{ quantidade }}</b> peças
-        </p>
+        <div class="imagem-box">
+            {% if imagem_url %}
+                <img src="{{ imagem_url }}" alt="Imagem do modelo">
+            {% else %}
+                <p><em>Imagem não cadastrada para este modelo.</em></p>
+            {% endif %}
+        </div>
 
-        <form action="/responder_ficha" method="post" class="space-y-5">
-            <!-- Campo oculto do token -->
-            <input type="hidden" name="token" value="{{ token }}">
+        <div class="dados">
+            <p><strong>Modelo:</strong> {{ ficha.modelo }}</p>
+            <p><strong>Quantidade total:</strong> {{ ficha.quantidade_total }}</p>
+            <p><strong>Função atual:</strong> {{ ficha.funcao }}</p>
+        </div>
 
-            <div>
-                <label class="block text-gray-700 font-semibold mb-1">Operador</label>
-                <input type="text" name="operador" value="{{ operador }}" required
-                    class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
-            </div>
+        <form action="/responder_ficha" method="post">
+            <input type="hidden" name="token_qr" value="{{ ficha.token_qr }}">
 
-            <div>
-                <label class="block text-gray-700 font-semibold mb-1">Função</label>
-                <select name="funcao" required
-                    class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                    <option value="">Selecione...</option>
-                    {% for f in funcoes %}
-                    <option value="{{ f }}">{{ f }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <label for="operador">Nome do operador:</label>
+            <input type="text" id="operador" name="operador" required>
 
-            <button type="submit"
-                class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition">
-                Registrar Produção ✅
-            </button>
+            <label for="funcao">Função executada:</label>
+            <select id="funcao" name="funcao" required>
+                <option value="">Selecione...</option>
+                <option value="CORTADOR">CORTADOR</option>
+                <option value="REFORÇADOR">REFORÇADOR</option>
+                <option value="PREGAR DEDÃO">PREGAR DEDÃO</option>
+                <option value="PREGAR FORCHETA">PREGAR FORCHETA</option>
+                <option value="VIRADOR">VIRADOR</option>
+                <option value="PASSAR VIÉS">PASSAR VIÉS</option>
+                <option value="FECHAR LUVA">FECHAR LUVA</option>
+                <option value="REVISAR E EMPACOTAR">REVISAR E EMPACOTAR</option>
+            </select>
+
+            <button type="submit">Enviar Produção</button>
         </form>
     </div>
 </body>
 </html>
+
 

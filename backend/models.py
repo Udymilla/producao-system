@@ -110,3 +110,5 @@ class ValorModelo(Base):
     id = Column(Integer, primary_key=True, index=True)
     modelo = Column(String, unique=True, nullable=False)
     valor_unitario = Column(Float, nullable=False)
+    tamanho = Column(String, nullable=False)
+    url_imagem = Column(String, nullable=True) 

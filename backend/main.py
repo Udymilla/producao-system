@@ -506,11 +506,11 @@ async def responder_ficha_qr_get(request: Request, token: str):
     db.close()
 
     if not ficha:
-        # token inválido/expirado
-        return templates.TemplateResponse(
-            "pagina.html",
-            {"request": request, "titulo": "QR inválido", "mensagem": "Ficha não encontrada ou QR expirado."},
-        )
+        return templates.TemplateResponse("formulario_operador.html", {"request": request, "ficha": None})
+
+    # 🔹 Buscar o modelo e a imagem correspondente
+    valor_modelo = db.query(ValorModelo).filter(ValorModelo.modelo == ficha.modelo).first()
+    imagem_url = valor_modelo.url_imagem if valor_modelo else None
 
     # monta o form com dados da ficha
     return templates.TemplateResponse(
@@ -521,9 +521,10 @@ async def responder_ficha_qr_get(request: Request, token: str):
             "numero_ficha": ficha.numero_ficha,
             "modelo": ficha.modelo,
             "funcao_padrao": ficha.funcao,
+            "ficha": ficha,
+            "imagem_url": imagem_url,
         },
     )
-
 
 @app.post("/responder_ficha", response_class=HTMLResponse)
 async def responder_ficha_qr_post(
