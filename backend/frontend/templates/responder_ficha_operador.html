@@ -89,7 +89,9 @@
 
             <label for="operador">Nome do operador:</label>
             <input type="text" id="operador" name="operador" required>
-
+            {% for f in funcoes %}
+            <option value="{{ f }}">{{ f }}</option>
+            {% endfor %}
             <label for="funcao">Função executada:</label>
             <select id="funcao" name="funcao" required>
                 <option value="">Selecione...</option>

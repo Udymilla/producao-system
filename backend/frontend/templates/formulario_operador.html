@@ -14,7 +14,23 @@
     </h1>
 
     {% if ficha %}
-    <form action="/responder_ficha" method="post" class="space-y-4">
+    
+    <form action="/responder_ficha" method="post">
+    <input type="hidden" name="token_qr" value="{{ token }}">
+
+    <label>Operador:</label>
+    <input type="text" name="operador" required>
+
+    <label>Função:</label>
+    <select name="funcao" required>
+        {% for f in funcoes %}
+        <option value="{{ f }}">{{ f }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Enviar</button>
+    </form>
+
 
       <input type="hidden" name="token" value="{{ ficha.token }}">
 

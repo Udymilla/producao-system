@@ -499,74 +499,38 @@ async def responder_ficha(request: Request,
         "mensagem": f"Ficha {ficha.numero_ficha} lançada com sucesso para <b>{operador}</b>!"
     })
 # ========= FORMULÁRIO ABERTO PELO QR (GET exibe; POST grava) =========
-@app.get("/responder_ficha", name="responder_ficha_qr", response_class=HTMLResponse)
-async def responder_ficha_qr_get(request: Request, token: str):
-    db = SessionLocal()
-    ficha = db.query(Ficha).filter(Ficha.token_qr== token).first()
-    db.close()
-
-    if not ficha:
-        return templates.TemplateResponse("formulario_operador.html", {"request": request, "ficha": None})
-
-    # 🔹 Buscar o modelo e a imagem correspondente
-    valor_modelo = db.query(ValorModelo).filter(ValorModelo.modelo == ficha.modelo).first()
-    imagem_url = valor_modelo.url_imagem if valor_modelo else None
-
-    # monta o form com dados da ficha
-    return templates.TemplateResponse(
-        "form_qr.html",
-        {
-            "request": request,
-            "token": token,
-            "numero_ficha": ficha.numero_ficha,
-            "modelo": ficha.modelo,
-            "funcao_padrao": ficha.funcao,
-            "ficha": ficha,
-            "imagem_url": imagem_url,
-        },
-    )
-
 @app.post("/responder_ficha", response_class=HTMLResponse)
-async def responder_ficha_qr_post(
+async def responder_ficha(
     request: Request,
     token_qr: str = Form(...),
     operador: str = Form(...),
     funcao: str = Form(...),
-    modelo: str = Form(...),
-    quantidade: int = Form(...)
+    quantidade: int = Form(...),
+    db: Session = Depends(get_db)
 ):
-    db = SessionLocal()
-
     ficha = db.query(Ficha).filter(Ficha.token_qr == token_qr).first()
     if not ficha:
-        db.close()
         return templates.TemplateResponse(
             "pagina.html",
-            {"request": request, "titulo": "Erro", "mensagem": "QR inválido ou ficha não encontrada."},
+            {"request": request, "titulo": "Erro", "mensagem": "Ficha não encontrada."}
         )
 
-    # calcula valor pelo tabela valores_modelos (se existir)
-    vm = db.query(ValorModelo).filter(ValorModelo.modelo == modelo).first()
+    # valor unitário do modelo
+    vm = db.query(ValorModelo).filter(ValorModelo.modelo == ficha.modelo).first()
     valor_unit = float(vm.valor_unitario) if vm else 0.0
     valor_total = valor_unit * quantidade
 
-    lanc = Producao(
+    nova_producao = Producao(
         ficha_id=ficha.id,
-        usuario_id=None,              # se quiser, você pode buscar id do usuário operacional
         operador=operador,
-        modelo=modelo,
+        modelo=ficha.modelo,
         servico=funcao,
         tamanho=None,
         quantidade=quantidade,
         valor=valor_total,
-        criado_em=datetime.utcnow(),
     )
-    db.add(lanc)
 
-    # opcional: se quiser “consumir” o QR para impedir reenvio, descomente:
-    # ficha.token = None
-    # ficha.status = StatusFicha.FINALIZADA
-
+    db.add(nova_producao)
     db.commit()
     db.close()
 
@@ -574,15 +538,13 @@ async def responder_ficha_qr_post(
         "pagina.html",
         {
             "request": request,
-            "titulo": "Lançamento registrado ✅",
-            "mensagem": (
-                f"Ficha <b>{ficha.numero_ficha}</b> – Modelo <b>{modelo}</b><br>"
-                f"Operador: <b>{operador}</b> | Função: <b>{funcao}</b><br>"
-                f"Quantidade: <b>{quantidade}</b><br>"
-                f"Valor total: <b>R$ {valor_total:,.2f}</b>"
-            ),
+            "titulo": "Lançamento Registrado ✅",
+            "mensagem": f"Ficha {ficha.numero_ficha} lançada com sucesso para {operador} ({funcao}) – {quantidade} peças.",
         },
     )
+
+
+
 
     # Gera número da ficha (última +1)
     ultimo = db.query(Ficha).order_by(Ficha.id.desc()).first()
@@ -781,6 +743,13 @@ async def gerar_fichas(request: Request, modelo: str = Form(...), qtd_fichas: in
 
     finally:
         db.close()
+
+@app.get("/gerar_fichas", response_class=HTMLResponse)
+async def gerar_fichas_page(request: Request):
+    db = SessionLocal()
+    modelos = db.query(Formulario).filter(Formulario.ativo == True).all()
+    db.close()
+    return templates.TemplateResponse("gerar_fichas.html", {"request": request, "modelos": modelos})
 
 # ==========================================================
 # FORMULÁRIO DO QR (responder ficha)

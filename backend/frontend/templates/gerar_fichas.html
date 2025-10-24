@@ -2,41 +2,59 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerar Fichas</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      margin: 40px;
+    }
+    form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      max-width: 400px;
+      margin: auto;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
-  <div class="bg-white shadow-md rounded-lg p-8 w-full max-w-lg">
-    <h1 class="text-2xl font-bold text-center text-blue-700 mb-6">
-      Gerar Fichas de Produção
-    </h1>
+<body>
+  <h2 style="text-align:center;">Gerar Fichas de Produção</h2>
+  <form action="/gerar_fichas" method="post">
+    <label for="modelo">Modelo:</label>
+    <select name="modelo" id="modelo" required>
+      {% for m in modelos %}
+        <option value="{{ m.nome_modelo }}">{{ m.nome_modelo }}</option>
+      {% endfor %}
+    </select>
 
-    <form action="/gerar_fichas" method="post" class="space-y-4">
-      <div>
-        <label class="block text-sm font-semibold mb-1">Selecione o Modelo:</label>
-        <select name="modelo" required class="w-full border px-3 py-2 rounded">
-          <option value="">Selecione...</option>
-          {% for modelo in modelos %}
-          <option value="{{ modelo.nome_modelo }}">{{ modelo.nome_modelo }}</option>
-          {% endfor %}
-        </select>
-      </div>
+    <label for="qtd_fichas">Quantidade de Fichas:</label>
+    <input type="number" name="qtd_fichas" id="qtd_fichas" min="1" value="5" required>
 
-      <div>
-        <label class="block text-sm font-semibold mb-1">Quantidade de Fichas:</label>
-        <input type="number" name="qtd_fichas" min="1" max="100" required
-               class="w-full border px-3 py-2 rounded">
-      </div>
-
-      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded">
-        Gerar Fichas (PDF)
-      </button>
-    </form>
-
-    {% if mensagem %}
-    <p class="text-green-600 text-center mt-4">{{ mensagem }}</p>
-    {% endif %}
-  </div>
+    <button type="submit">Gerar Fichas</button>
+  </form>
 </body>
 </html>
