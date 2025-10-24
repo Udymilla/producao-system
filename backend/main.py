@@ -717,17 +717,6 @@ import qrcode
 import io
 import uuid
 
-@app.get("/gerar_fichas", response_class=HTMLResponse)
-async def gerar_fichas_page(request: Request):
-    db = SessionLocal()
-    modelos = db.query(Formulario).filter(Formulario.ativo == True).all()
-    db.close()
-    return templates.TemplateResponse("gerar_fichas.html", {
-        "request": request,
-        "modelos": modelos
-    })
-
-
 @app.post("/gerar_fichas")
 async def gerar_fichas(request: Request, modelo: str = Form(...), qtd_fichas: int = Form(...)):
     db = SessionLocal()
@@ -793,7 +782,6 @@ async def gerar_fichas(request: Request, modelo: str = Form(...), qtd_fichas: in
     finally:
         db.close()
 
-   
 # ==========================================================
 # FORMULÁRIO DO QR (responder ficha)
 # ==========================================================
