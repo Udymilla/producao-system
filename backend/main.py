@@ -463,12 +463,12 @@ async def login_operador_post(request: Request):
 
 @app.post("/responder_ficha", response_class=HTMLResponse)
 async def responder_ficha(request: Request,
-                          token: str = Form(...),
+                          token_qr: str = Form(...),
                           operador: str = Form(...),
                           funcao: str = Form(...),
                           db: Session = Depends(get_db)):
 
-    ficha = db.query(Ficha).filter(Ficha.token_qr== token).first()
+    ficha = db.query(Ficha).filter(Ficha.token_qr== token_qr).first()
     if not ficha:
         return templates.TemplateResponse("formulario_operador.html", {
             "request": request,
@@ -529,7 +529,7 @@ async def responder_ficha_qr_get(request: Request, token: str):
 @app.post("/responder_ficha", response_class=HTMLResponse)
 async def responder_ficha_qr_post(
     request: Request,
-    token: str = Form(...),
+    token_qr: str = Form(...),
     operador: str = Form(...),
     funcao: str = Form(...),
     modelo: str = Form(...),
@@ -537,7 +537,7 @@ async def responder_ficha_qr_post(
 ):
     db = SessionLocal()
 
-    ficha = db.query(Ficha).filter(Ficha.token_qr == token).first()
+    ficha = db.query(Ficha).filter(Ficha.token_qr == token_qr).first()
     if not ficha:
         db.close()
         return templates.TemplateResponse(
@@ -732,59 +732,67 @@ async def gerar_fichas_page(request: Request):
 async def gerar_fichas(request: Request, modelo: str = Form(...), qtd_fichas: int = Form(...)):
     db = SessionLocal()
 
-    # pega a última ficha
-    ultima_ficha = db.query(Ficha).order_by(Ficha.id.desc()).first()
-    proximo_numero = 8000 if not ultima_ficha else int(ultima_ficha.numero_ficha) + 1
+    try:
+        # pega a última ficha existente
+        ultima_ficha = db.query(Ficha).order_by(Ficha.id.desc()).first()
+        proximo_numero = 8000 if not ultima_ficha else int(ultima_ficha.numero_ficha) + 1
 
-    # define quantidade padrão por tipo
-    quantidade = 50 if "LUVA" in modelo.upper() else 20
+        # define quantidade padrão por tipo
+        quantidade = 50 if "LUVA" in modelo.upper() else 20
 
-    fichas = []
+        fichas = []
 
-    # gera e salva no banco
-    for i in range(qtd_fichas):
-        token = str(uuid.uuid4())
-        nova = Ficha(
-            numero_ficha=str(proximo_numero + i),
-            modelo=modelo,
-            funcao="GERAL",           # ✅ valor padrão, evita NULL
-            quantidade_total=quantidade,
-            setor_atual="CORTE",      # opcional, ou defina outro setor inicial
-            token=token
-        )
-        db.add(nova)
-        fichas.append(nova)
+        # gera e salva no banco
+        for i in range(qtd_fichas):
+            token_qr = str(uuid.uuid4())  # ✅ token único
+            nova = Ficha(
+                numero_ficha=str(proximo_numero + i),
+                modelo=modelo,
+                funcao="GERAL",
+                quantidade_total=quantidade,
+                setor_atual="CORTE",
+                token_qr=token_qr  # ✅ usa o token correto
+            )
+            db.add(nova)
+            fichas.append(nova)
 
-    db.commit()
+        db.commit()
 
-    # === Geração do PDF ===
-    pdf_path = "fichas_geradas.pdf"
-    c = canvas.Canvas(pdf_path, pagesize=A4)
+        # === Geração do PDF ===
+        pdf_path = "fichas_geradas.pdf"
+        c = canvas.Canvas(pdf_path, pagesize=A4)
 
-    for ficha in fichas:
-        qr_url = f"http://127.0.0.1:8000/responder_ficha?token={ficha.token}"
-        qr_img = qrcode.make(qr_url)
-        buffer = io.BytesIO()
-        qr_img.save(buffer, format="PNG")
-        buffer.seek(0)
-        qr_image = ImageReader(buffer)
+        for ficha in fichas:
+            qr_url = f"http://127.0.0.1:8000/responder_ficha?token={ficha.token_qr}"  # ✅ token certo
+            qr_img = qrcode.make(qr_url)
+            buffer = io.BytesIO()
+            qr_img.save(buffer, format="PNG")
+            buffer.seek(0)
+            qr_image = ImageReader(buffer)
 
-        # Cabeçalho
-        c.setFont("Helvetica-Bold", 24)
-        c.drawCentredString(10.5 * cm, 27 * cm, f"FICHA Nº {ficha.numero_ficha}")
-        c.setFont("Helvetica", 18)
-        c.drawCentredString(10.5 * cm, 25 * cm, f"MODELO: {ficha.modelo}")
-        c.setFont("Helvetica", 16)
-        c.drawCentredString(10.5 * cm, 23.5 * cm, f"QUANTIDADE: {ficha.quantidade_total} PEÇAS")
+            # Cabeçalho
+            c.setFont("Helvetica-Bold", 24)
+            c.drawCentredString(10.5 * cm, 27 * cm, f"FICHA Nº {ficha.numero_ficha}")
+            c.setFont("Helvetica", 18)
+            c.drawCentredString(10.5 * cm, 25 * cm, f"MODELO: {ficha.modelo}")
+            c.setFont("Helvetica", 16)
+            c.drawCentredString(10.5 * cm, 23.5 * cm, f"QUANTIDADE: {ficha.quantidade_total} PEÇAS")
 
-        # QR centralizado
-        c.drawImage(qr_image, 6.5 * cm, 13 * cm, width=8 * cm, height=8 * cm)
-        c.showPage()
+            # QR centralizado
+            c.drawImage(qr_image, 6.5 * cm, 13 * cm, width=8 * cm, height=8 * cm)
+            c.showPage()
 
-    c.save()
-    db.close()
+        c.save()
 
-    return FileResponse(pdf_path, filename="fichas_geradas.pdf", media_type="application/pdf")
+        return FileResponse(pdf_path, filename="fichas_geradas.pdf", media_type="application/pdf")
+
+    except Exception as e:
+        print("Erro ao gerar fichas:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        db.close()
+
    
 # ==========================================================
 # FORMULÁRIO DO QR (responder ficha)
