@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Enum, Text
+    Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Enum, Text, UniqueConstraint
 )
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -108,7 +108,15 @@ class ValorModelo(Base):
     __tablename__ = "valores_modelos"
 
     id = Column(Integer, primary_key=True, index=True)
-    modelo = Column(String, unique=True, nullable=False)
+    modelo = Column(String, nullable=False)
+    funcao = Column(String, nullable=False)
     valor_unitario = Column(Float, nullable=False)
-    tamanho = Column(String, nullable=False)
-    url_imagem = Column(String, nullable=True) 
+    tamanho = Column(String, nullable=True)
+    url_imagem = Column(String, nullable=True)
+
+    __table_args__ = (
+        # Garante que modelo + função sejam únicos juntos
+        UniqueConstraint("modelo", "funcao", name="uq_modelo_funcao"),
+    )
+
+

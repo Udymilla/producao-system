@@ -140,42 +140,39 @@ def resumo_por_operador(
 @app.get("/valores_modelos", response_class=HTMLResponse)
 async def listar_valores_modelos(request: Request):
     db = SessionLocal()
-    valores = db.query(ValorModelo).order_by(ValorModelo.modelo.asc()).all()
-
-    # 🔹 busca todos os modelos das tabelas fichas e produção
-    modelos_fichas = db.query(Ficha.modelo).distinct().all()   # ✅ corrigido
-    modelos_producao = db.query(Producao.modelo).distinct().all()
-
-    # 🔹 junta e remove duplicados
-    modelos = sorted(set([m[0] for m in modelos_fichas + modelos_producao if m[0]]))
-
+    valores = db.query(ValorModelo).order_by(ValorModelo.modelo.asc(), ValorModelo.funcao.asc()).all()
     db.close()
+    return templates.TemplateResponse("valores_modelos.html", {"request": request, "valores": valores})
 
-    return templates.TemplateResponse("valores_modelos.html", {
-        "request": request,
-        "valores": valores,
-        "modelos": modelos
-    })
 
 @app.post("/valores_modelos", response_class=HTMLResponse)
-async def cadastrar_valor_modelo(request: Request, modelo: str = Form(...), valor: float = Form(...)):
+async def cadastrar_valor_modelo(request: Request,
+                                 modelo: str = Form(...),
+                                 funcao: str = Form(...),
+                                 valor: float = Form(...)):
     db = SessionLocal()
-    existente = db.query(ValorModelo).filter(ValorModelo.modelo == modelo).first()
+
+    existente = db.query(ValorModelo).filter(
+        ValorModelo.modelo == modelo,
+        ValorModelo.funcao == funcao
+    ).first()
 
     if existente:
-        existente.valor_unitario = valor  # atualiza valor
+        existente.valor_unitario = valor
+        mensagem = f"🔄 Valor atualizado para {modelo} - {funcao}: R$ {valor:.2f}"
     else:
-        novo = ValorModelo(modelo=modelo, valor_unitario=valor)
+        novo = ValorModelo(modelo=modelo, funcao=funcao, valor_unitario=valor)
         db.add(novo)
+        mensagem = f"✅ Novo valor cadastrado: {modelo} - {funcao} = R$ {valor:.2f}"
 
     db.commit()
-    valores = db.query(ValorModelo).order_by(ValorModelo.modelo.asc()).all()
+    valores = db.query(ValorModelo).order_by(ValorModelo.modelo.asc(), ValorModelo.funcao.asc()).all()
     db.close()
 
     return templates.TemplateResponse("valores_modelos.html", {
         "request": request,
         "valores": valores,
-        "mensagem": f"Valor atualizado para o modelo <b>{modelo}</b>: R$ {valor:.2f}"
+        "mensagem": mensagem
     })
 
 from backend.models import Ficha, StatusFicha

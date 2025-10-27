@@ -2,16 +2,16 @@
 {% block content %}
 <style>
   :root {
+    --primary: #0d6efd;
     --bg-light: #ffffff;
-    --text-light: #333333;
+    --text-light: #212529;
     --card-light: #f8f9fa;
-    --border-light: #dddddd;
-    --primary: #007bff;
+    --border-light: #dee2e6;
 
     --bg-dark: #121212;
-    --text-dark: #e4e4e4;
-    --card-dark: #1e1e1e;
-    --border-dark: #333333;
+    --text-dark: #f5f5f5;
+    --card-dark: #1c1c1c;
+    --border-dark: #2b2b2b;
   }
 
   body {
@@ -28,50 +28,46 @@
   }
 
   .ficha-container {
-    max-width: 620px;
+    max-width: 640px;
     margin: 60px auto;
-    background: var(--bg-light);
-    border-radius: 14px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    padding: 40px 50px;
-    transition: background 0.3s, box-shadow 0.3s;
+    background-color: var(--card-light);
+    color: var(--text-light);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 40px 45px;
+    transition: background-color 0.3s, color 0.3s;
   }
 
   @media (prefers-color-scheme: dark) {
     .ficha-container {
-      background: var(--card-dark);
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+      background-color: var(--card-dark);
+      color: var(--text-dark);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.06);
     }
   }
 
   .ficha-container h2 {
     text-align: center;
     font-weight: 700;
+    color: inherit;
     margin-bottom: 25px;
-    color: var(--text-light);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .ficha-container h2 {
-      color: var(--text-dark);
-    }
   }
 
   .ficha-imagem {
     display: flex;
     justify-content: center;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
   }
 
   .ficha-imagem img {
-    max-width: 280px;
-    border-radius: 10px;
+    max-width: 260px;
+    border-radius: 8px;
     border: 1px solid var(--border-light);
   }
 
   @media (prefers-color-scheme: dark) {
     .ficha-imagem img {
-      border: 1px solid var(--border-dark);
+      border-color: var(--border-dark);
     }
   }
 
@@ -79,15 +75,14 @@
     text-align: center;
     font-style: italic;
     color: #999;
-    margin-bottom: 10px;
   }
 
   .ficha-dados {
     background: var(--card-light);
-    border-radius: 10px;
-    padding: 18px 22px;
-    margin-bottom: 25px;
     border: 1px solid var(--border-light);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 25px;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -98,34 +93,32 @@
   }
 
   .ficha-dados p {
-    margin: 6px 0;
-    font-size: 16px;
+    margin: 5px 0;
   }
 
   label {
     display: block;
     font-weight: 600;
     margin-top: 15px;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
   }
 
   input[type="text"],
   input[type="number"],
   select {
     width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border-light);
+    padding: 10px 12px;
     border-radius: 8px;
-    font-size: 15px;
+    border: 1px solid var(--border-light);
     background-color: var(--bg-light);
     color: var(--text-light);
-    transition: border-color 0.3s, background 0.3s, color 0.3s;
+    transition: all 0.3s ease;
   }
 
   input:focus,
   select:focus {
-    border-color: var(--primary);
     outline: none;
+    border-color: var(--primary);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -136,34 +129,29 @@
       color: var(--text-dark);
       border-color: var(--border-dark);
     }
+
+    input:focus,
+    select:focus {
+      border-color: #66aaff;
+    }
   }
 
   button {
-    display: block;
     width: 100%;
     background-color: var(--primary);
     color: #fff;
     border: none;
-    padding: 12px;
-    font-size: 17px;
-    font-weight: 600;
     border-radius: 8px;
+    font-weight: 600;
+    padding: 12px;
     margin-top: 25px;
+    font-size: 16px;
     transition: background-color 0.3s;
   }
 
   button:hover {
-    background-color: #0056b3;
+    background-color: #0b5ed7;
     cursor: pointer;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    button {
-      background-color: #3392ff;
-    }
-    button:hover {
-      background-color: #61a8ff;
-    }
   }
 </style>
 
