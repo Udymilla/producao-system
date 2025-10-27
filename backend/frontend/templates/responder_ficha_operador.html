@@ -1,114 +1,206 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Responder Ficha - {{ ficha.modelo }}</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f2f4f7;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 40px auto;
-            background: #fff;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        .imagem-box {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .imagem-box img {
-            width: 100%;
-            max-width: 300px;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-        }
-        .dados {
-            margin-bottom: 20px;
-            background: #f9fafc;
-            border-radius: 8px;
-            padding: 12px;
-        }
-        label {
-            display: block;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        input, select {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-        }
-        button {
-            width: 100%;
-            background: #004aad;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            padding: 12px;
-            font-size: 16px;
-            margin-top: 15px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #003c8f;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Ficha {{ ficha.numero_ficha }}</h1>
+{% extends "base.html" %}
+{% block content %}
+<style>
+  :root {
+    --bg-light: #ffffff;
+    --text-light: #333333;
+    --card-light: #f8f9fa;
+    --border-light: #dddddd;
+    --primary: #007bff;
 
-        <div class="imagem-box">
-            {% if imagem_url %}
-                <img src="{{ imagem_url }}" alt="Imagem do modelo">
-            {% else %}
-                <p><em>Imagem não cadastrada para este modelo.</em></p>
-            {% endif %}
-        </div>
+    --bg-dark: #121212;
+    --text-dark: #e4e4e4;
+    --card-dark: #1e1e1e;
+    --border-dark: #333333;
+  }
 
-        <div class="dados">
-            <p><strong>Modelo:</strong> {{ ficha.modelo }}</p>
-            <p><strong>Quantidade total:</strong> {{ ficha.quantidade_total }}</p>
-            <p><strong>Função atual:</strong> {{ ficha.funcao }}</p>
-        </div>
+  body {
+    background-color: var(--bg-light);
+    color: var(--text-light);
+    transition: background-color 0.3s, color 0.3s;
+  }
 
-        <form action="/responder_ficha" method="post">
-            <input type="hidden" name="token_qr" value="{{ ficha.token_qr }}">
+  @media (prefers-color-scheme: dark) {
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+    }
+  }
 
-            <label for="operador">Nome do operador:</label>
-            <input type="text" id="operador" name="operador" required>
-            {% for f in funcoes %}
-            <option value="{{ f }}">{{ f }}</option>
-            {% endfor %}
-            <label for="funcao">Função executada:</label>
-            <select id="funcao" name="funcao" required>
-                <option value="">Selecione...</option>
-                <option value="CORTADOR">CORTADOR</option>
-                <option value="REFORÇADOR">REFORÇADOR</option>
-                <option value="PREGAR DEDÃO">PREGAR DEDÃO</option>
-                <option value="PREGAR FORCHETA">PREGAR FORCHETA</option>
-                <option value="VIRADOR">VIRADOR</option>
-                <option value="PASSAR VIÉS">PASSAR VIÉS</option>
-                <option value="FECHAR LUVA">FECHAR LUVA</option>
-                <option value="REVISAR E EMPACOTAR">REVISAR E EMPACOTAR</option>
-            </select>
+  .ficha-container {
+    max-width: 620px;
+    margin: 60px auto;
+    background: var(--bg-light);
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    padding: 40px 50px;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
 
-            <button type="submit">Enviar Produção</button>
-        </form>
-    </div>
-</body>
-</html>
+  @media (prefers-color-scheme: dark) {
+    .ficha-container {
+      background: var(--card-dark);
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+    }
+  }
 
+  .ficha-container h2 {
+    text-align: center;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: var(--text-light);
+  }
 
+  @media (prefers-color-scheme: dark) {
+    .ficha-container h2 {
+      color: var(--text-dark);
+    }
+  }
+
+  .ficha-imagem {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 25px;
+  }
+
+  .ficha-imagem img {
+    max-width: 280px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .ficha-imagem img {
+      border: 1px solid var(--border-dark);
+    }
+  }
+
+  .sem-imagem {
+    text-align: center;
+    font-style: italic;
+    color: #999;
+    margin-bottom: 10px;
+  }
+
+  .ficha-dados {
+    background: var(--card-light);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 25px;
+    border: 1px solid var(--border-light);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .ficha-dados {
+      background: var(--card-dark);
+      border-color: var(--border-dark);
+    }
+  }
+
+  .ficha-dados p {
+    margin: 6px 0;
+    font-size: 16px;
+  }
+
+  label {
+    display: block;
+    font-weight: 600;
+    margin-top: 15px;
+    margin-bottom: 4px;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    font-size: 15px;
+    background-color: var(--bg-light);
+    color: var(--text-light);
+    transition: border-color 0.3s, background 0.3s, color 0.3s;
+  }
+
+  input:focus,
+  select:focus {
+    border-color: var(--primary);
+    outline: none;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    input[type="text"],
+    input[type="number"],
+    select {
+      background-color: var(--card-dark);
+      color: var(--text-dark);
+      border-color: var(--border-dark);
+    }
+  }
+
+  button {
+    display: block;
+    width: 100%;
+    background-color: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 12px;
+    font-size: 17px;
+    font-weight: 600;
+    border-radius: 8px;
+    margin-top: 25px;
+    transition: background-color 0.3s;
+  }
+
+  button:hover {
+    background-color: #0056b3;
+    cursor: pointer;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    button {
+      background-color: #3392ff;
+    }
+    button:hover {
+      background-color: #61a8ff;
+    }
+  }
+</style>
+
+<div class="ficha-container">
+  <h2>Ficha {{ ficha.numero_ficha }}</h2>
+
+  <div class="ficha-imagem">
+    {% if imagem_url %}
+      <img src="{{ imagem_url }}" alt="Imagem do modelo">
+    {% else %}
+      <p class="sem-imagem">Imagem não cadastrada para este modelo.</p>
+    {% endif %}
+  </div>
+
+  <div class="ficha-dados">
+    <p><b>Modelo:</b> {{ ficha.modelo }}</p>
+    <p><b>Quantidade total:</b> {{ ficha.quantidade_total }}</p>
+    <p><b>Função atual:</b> {{ ficha.funcao }}</p>
+  </div>
+
+  <form action="/responder_ficha" method="post">
+    <input type="hidden" name="token_qr" value="{{ token }}">
+
+    <label for="operador">Nome do operador:</label>
+    <input type="text" id="operador" name="operador" value="{{ operador }}" required>
+
+    <label for="funcao">Selecione sua função:</label>
+    <select id="funcao" name="funcao" required>
+      {% for f in funcoes %}
+        <option value="{{ f }}">{{ f }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="quantidade">Quantidade produzida:</label>
+    <input type="number" id="quantidade" name="quantidade" value="{{ ficha.quantidade_total }}" required>
+
+    <button type="submit">Registrar Produção</button>
+  </form>
+</div>
+{% endblock %}
