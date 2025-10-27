@@ -763,22 +763,22 @@ FUNCOES_OPCOES = [
 ]
 
 @app.get("/responder_ficha", response_class=HTMLResponse)
-async def responder_ficha_page(request: Request, token: str):
-    db = SessionLocal()
-    ficha = db.query(Ficha).filter(Ficha.token_qr== token).first()
-    db.close()
+async def responder_ficha_page(request: Request, token: str, db: Session = Depends(get_db)):
+    ficha = db.query(Ficha).filter(Ficha.token_qr == token).first()
+    operador = request.session.get("usuario", "")
+
     if not ficha:
         return HTMLResponse("<h3>Ficha não encontrada ou QR inválido.</h3>", status_code=404)
 
-    operador_logado = request.session.get("operador") or request.session.get("usuario")
     return templates.TemplateResponse("responder_ficha_operador.html", {
         "request": request,
+        "ficha": ficha,          # ✅ envia o objeto ficha pro template
+        "token": token,
+        "operador": operador,
         "numero_ficha": ficha.numero_ficha,
         "modelo": ficha.modelo,
         "quantidade": ficha.quantidade_total,
-        "operador": operador_logado or "",
         "funcoes": FUNCOES_OPCOES,
-        "token": token
     })
 
 @app.post("/responder_ficha", response_class=HTMLResponse)
