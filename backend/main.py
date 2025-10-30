@@ -175,6 +175,13 @@ async def cadastrar_valor_modelo(request: Request,
         "mensagem": mensagem
     })
 
+@app.get("/funcoes_por_modelo/{modelo}")
+def funcoes_por_modelo(modelo: str):
+    db: Session = SessionLocal()
+    funcoes = db.query(ValorModelo.funcao).filter(ValorModelo.modelo == modelo).distinct().all()
+    return {"funcoes": [f[0] for f in funcoes]}
+
+
 from backend.models import Ficha, StatusFicha
 from backend.schemas import FichaCreate, FichaResponse
 
@@ -341,15 +348,12 @@ async def consultar_producao(request: Request):
     return templates.TemplateResponse("consultar_producao.html", {"request": request})
 
 @app.get("/cadastro_formulario", response_class=HTMLResponse)
-async def cadastro_formulario_page(request: Request):
-    db = SessionLocal()
-    modelos = db.query(Formulario).order_by(Formulario.nome_modelo.asc()).all()
-    db.close()
-    return templates.TemplateResponse("cadastro_formulario.html", {
-        "request": request,
-        "modelos": modelos
-    })
-
+async def get_cadastro_formulario(request: Request, db: Session = Depends(get_db)):
+    modelos = db.query(ValorModelo).order_by(ValorModelo.modelo.asc()).all()
+    return templates.TemplateResponse(
+        "cadastro_formulario.html",
+        {"request": request, "modelos": modelos}
+    )
 
 @app.post("/cadastro_formulario", response_class=HTMLResponse)
 async def cadastro_formulario_post(request: Request,

@@ -1,68 +1,100 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cadastro de Modelos</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
+{% extends "base.html" %}
 
-  <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg">
-    <h1 class="text-2xl font-bold text-center text-blue-700 mb-6">
-      Cadastro de Modelos
-    </h1>
+{% block content %}
+<div class="flex justify-center items-center py-10">
+  <div class="bg-white shadow-lg rounded-2xl w-full max-w-2xl p-8 border border-gray-200">
+    <h1 class="text-2xl font-bold text-center text-blue-600 mb-8">Cadastro de Formulário</h1>
 
-    <form action="/cadastro_formulario" method="post" class="space-y-4">
+    <form method="POST" action="/cadastro_formulario" class="space-y-6">
+
+      <!-- MODELO -->
       <div>
-        <label class="block text-gray-700 font-semibold">Nome do Modelo:</label>
-        <input type="text" name="nome_modelo" required placeholder="Ex: LUVA FORCHETA P"
-               class="w-full border rounded px-3 py-2">
+        <label for="modelo" class="block text-sm font-medium text-gray-700 mb-1">Modelo:</label>
+        <select id="modelo" name="modelo"
+          class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
+          <option value="">Selecione um modelo</option>
+          {% for m in modelos %}
+            <option value="{{ m.modelo }}">{{ m.modelo }}</option>
+          {% endfor %}
+        </select>
       </div>
 
+      <!-- FUNÇÃO -->
       <div>
-        <label class="block text-gray-700 font-semibold">Cor (opcional):</label>
-        <input type="text" name="cor" placeholder="Ex: Cinza / Azul"
-               class="w-full border rounded px-3 py-2">
+        <label for="funcao" class="block text-sm font-medium text-gray-700 mb-1">Função:</label>
+        <input type="text" id="funcao" name="funcao" placeholder="Ex: Costura / Corte"
+          class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" />
       </div>
 
+      <!-- COR -->
       <div>
-        <label class="block text-gray-700 font-semibold mb-2">Tamanhos disponíveis:</label>
-        <div class="grid grid-cols-3 gap-2 text-sm">
-          <label><input type="checkbox" name="tamanhos" value="PP"> PP</label>
-          <label><input type="checkbox" name="tamanhos" value="P"> P</label>
-          <label><input type="checkbox" name="tamanhos" value="M"> M</label>
-          <label><input type="checkbox" name="tamanhos" value="G"> G</label>
-          <label><input type="checkbox" name="tamanhos" value="GG"> GG</label>
-          <label><input type="checkbox" name="tamanhos" value="XG"> XG</label>
-          <label><input type="checkbox" name="tamanhos" value="XG2"> XG2</label>
+        <label for="cor" class="block text-sm font-medium text-gray-700 mb-1">Cor (opcional):</label>
+        <input type="text" id="cor" name="cor" placeholder="Ex: Cinza / Azul"
+          class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" />
+      </div>
+
+      <!-- TAMANHOS -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Tamanhos disponíveis:</label>
+        <div class="grid grid-cols-3 gap-3">
+          {% for t in ["PP", "P", "M", "G", "GG", "XG", "XG2"] %}
+          <label class="flex items-center space-x-2">
+            <input type="checkbox" name="tamanho" value="{{ t }}"
+              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <span>{{ t }}</span>
+          </label>
+          {% endfor %}
         </div>
       </div>
 
-      <button type="submit"
-              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded">
-        Salvar Modelo
-      </button>
+      <!-- BOTÃO -->
+      <div class="pt-4">
+        <button type="submit"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg shadow-sm transition">
+          Salvar Formulário
+        </button>
+      </div>
+
     </form>
 
-    {% if mensagem %}
-      <p class="text-center text-green-600 mt-4">{{ mensagem | safe }}</p>
-    {% endif %}
+    <hr class="my-8">
 
-    <hr class="my-6">
-
-    <h2 class="text-lg font-semibold text-gray-700 mb-2">Modelos Cadastrados</h2>
-    <ul class="divide-y">
-      {% for modelo in modelos %}
-      <li class="py-2">
-        <b>{{ modelo.nome_modelo }}</b>
-        <span class="text-sm text-gray-500">({{ modelo.tamanhos or 'Sem tamanhos' }})</span>
-      </li>
+    <!-- MODELOS CADASTRADOS -->
+    <div>
+      <h2 class="text-lg font-semibold text-gray-800 mb-3">Formulários Cadastrados</h2>
+      {% if modelos %}
+        <ul class="divide-y divide-gray-200">
+          {% for m in modelos %}
+          <li class="py-2 text-gray-700 flex justify-between">
+            <span class="font-medium">{{ m.modelo }}</span>
+            {% if m.funcao %}<span class="text-sm text-gray-500">{{ m.funcao }}</span>{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
       {% else %}
-      <li class="text-gray-500 text-sm italic">Nenhum modelo cadastrado ainda.</li>
-      {% endfor %}
-    </ul>
+        <p class="text-sm text-gray-500 italic">(Nenhum formulário cadastrado ainda)</p>
+      {% endif %}
+    </div>
   </div>
+</div>
 
-</body>
-</html>
+<!-- Script opcional para carregar função automaticamente -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const selectModelo = document.getElementById("modelo");
+  const funcaoInput = document.getElementById("funcao");
+
+  selectModelo.addEventListener("change", async () => {
+    const modelo = selectModelo.value;
+    if (!modelo) return;
+    try {
+      const r = await fetch(`/api/funcao_por_modelo?modelo=${encodeURIComponent(modelo)}`);
+      const data = await r.json();
+      funcaoInput.value = data.funcao || "";
+    } catch (e) {
+      console.error(e);
+    }
+  });
+});
+</script>
+{% endblock %}
