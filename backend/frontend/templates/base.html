@@ -1,35 +1,32 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}Sistema de Produção Dadalto{% endblock %}</title>
-  <link rel="icon" href="/static/favicon.png" />
-  <link href="/static/css/output.css" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Produção{% endblock %}</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon.png">
+    <link rel="stylesheet" href="/static/css/output.css">
 </head>
 
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col">
+    <!-- Botão fixo de voltar -->
+    <a href="/dashboard"
+       class="fixed top-4 left-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded shadow-md transition">
+        ⬅ Voltar ao Dashboard
+    </a>
 
-  <!-- HEADER -->
-  <header class="bg-blue-700 text-white shadow-md">
-    <div class="container mx-auto flex justify-between items-center py-3 px-6">
-      <h1 class="text-xl font-bold tracking-wide">Sistema de Produção Dadalto</h1>
-      <nav class="space-x-4">
-        <a href="/dashboard" class="hover:text-blue-200 transition">⬅ Voltar</a>
-        <a href="/logout" class="text-sm bg-red-500 px-3 py-1 rounded hover:bg-red-600 transition">Sair</a>
-      </nav>
-    </div>
-  </header>
+    <!-- Conteúdo principal -->
+    <main class="flex-1 flex flex-col items-center justify-start pt-20 pb-10 px-6">
+        <div class="w-full max-w-5xl bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 border border-gray-200 dark:border-gray-700">
+            {% block content %}
+            <!-- O conteúdo das páginas vai aqui -->
+            {% endblock %}
+        </div>
+    </main>
 
-  <!-- CONTEÚDO -->
-  <main class="container mx-auto px-4 py-8">
-    {% block content %}{% endblock %}
-  </main>
-
-  <!-- FOOTER -->
-  <footer class="text-center text-sm text-gray-500 py-4 border-t">
-    &copy; {{ 2025 }} Sistema Dadalto. Todos os direitos reservados.
-  </footer>
-
+    <!-- Rodapé -->
+    <footer class="text-center py-4 text-sm text-gray-600 dark:text-gray-400">
+        &copy; {{ now().year }} Sistema de Produção Dadalto — Todos os direitos reservados.
+    </footer>
 </body>
 </html>

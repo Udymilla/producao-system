@@ -12,10 +12,13 @@ from starlette.middleware.sessions import SessionMiddleware
 import qrcode
 import io
 import base64
+from datetime import datetime
 
 # Cria as tabelas se ainda não existirem
 Base.metadata.create_all(bind=engine)
 
+templates = Jinja2Templates(directory="backend/frontend/templates")
+templates.env.globals['now'] = datetime.now
 # Cria o app
 app = FastAPI(title="Sistema de Produção Dadalto")
 
@@ -24,7 +27,6 @@ app.add_middleware(SessionMiddleware, secret_key="supersegredo123")
 
 # Configuração de templates e arquivos estáticos
 app.mount("/static", StaticFiles(directory="backend/frontend/static"), name="static")
-templates = Jinja2Templates(directory="backend/frontend/templates")
 
 # Dependência para obter sessão do banco
 def get_db():
@@ -393,7 +395,6 @@ async def cadastro_formulario_post(request: Request,
 @app.get("/administracao", response_class=HTMLResponse)
 async def administracao_page(request: Request):
     return templates.TemplateResponse("administracao.html", {"request": request})
-
 
 # ===== Cadastrar novos usuários operacionais =====
 
