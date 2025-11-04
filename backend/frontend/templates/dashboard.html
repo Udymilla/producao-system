@@ -17,10 +17,28 @@
             background-color: #f8fafc;
         }
         .card {
-            @apply bg-white shadow-md rounded-2xl p-6 hover:shadow-lg transition duration-200;
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            transition: box-shadow 0.2s ease;
+        }
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
         }
         .btn {
-            @apply inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #2563eb; /* blue-600 */
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.15s ease;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background-color: #1e40af; /* blue-700 */
         }
         .btn i {
             font-size: 18px;
