@@ -1,138 +1,163 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consulta de Fichas - Sistema Dadalto</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+{% extends "base.html" %}
+{% block title %}Consulta de Produção{% endblock %}
+{% block page_title %}Consulta de Produção{% endblock %}
+{% set back_url = '/dashboard' %}
 
-<div class="min-h-screen bg-gray-100 px-6 py-8">
+{% block header_extra %}
+<a href="/valores_modelos" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded">
+  💰 Painel de Valores
+</a>
+{% endblock %}
 
-    <!-- Título e botões -->
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-blue-900">Consulta de Produção</h1>
-
-        <div class="flex gap-3">
-            <!-- Mostrar o botão de valores apenas se o perfil for admin ou líder -->
-           <div class="text-right">
-        <a href="/valores_modelos" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-            💰 Painel de Valores
-        </a>
+{% block content %}
+<div class="bg-white rounded-lg shadow p-6">
+  <form id="filtroForm" class="grid md:grid-cols-4 gap-4 mb-6">
+    <div>
+      <label for="operador" class="block text-sm font-medium text-gray-700">Operador</label>
+      <input type="text" id="operador" name="operador"
+             class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:ring-blue-300"
+             placeholder="Ex: Rafael">
     </div>
 
-            <!-- Botão de voltar -->
-            <a href="/dashboard"
-               class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center">
-                ← Voltar
-            </a>
-        </div>
+    <div>
+      <label for="data_inicio" class="block text-sm font-medium text-gray-700">Data Inicial</label>
+      <input type="date" id="data_inicio" name="data_inicio"
+             class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:ring-blue-300">
     </div>
 
-    <!-- Filtro -->
-    <form id="filtroForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-5 rounded-lg shadow">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Operador</label>
-            <input name="operador" type="text" placeholder="Ex: Luana"
-                   class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Data Inicial</label>
-            <input name="data_inicial" type="date"
-                   class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Data Final</label>
-            <input name="data_final" type="date"
-                   class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <div class="flex items-end">
-            <button type="submit"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg w-full">
-                Pesquisar
-            </button>
-        </div>
-    </form>
-
-    <!-- Resultados -->
-    <div class="mt-8 bg-white rounded-lg shadow overflow-x-auto">
-        <table id="tabelaProducao" class="min-w-full text-sm text-left text-gray-600">
-            <thead class="bg-blue-800 text-white">
-                <tr>
-                    <th class="px-4 py-3">Modelo</th>
-                    <th class="px-4 py-3">Total Peças</th>
-                    <th class="px-4 py-3">Valor Total (R$)</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 text-center">
-                <tr>
-                    <td colspan="3" class="py-6 text-gray-400">Nenhum resultado encontrado.</td>
-                </tr>
-            </tbody>
-        </table>
+    <div>
+      <label for="data_fim" class="block text-sm font-medium text-gray-700">Data Final</label>
+      <input type="date" id="data_fim" name="data_fim"
+             class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:ring-blue-300">
     </div>
 
-    <!-- Gráfico -->
-    <div class="mt-10 bg-white p-6 rounded-lg shadow">
-        <h2 class="text-lg font-semibold text-gray-800 mb-3">Produção por Modelo</h2>
-        <canvas id="graficoProducao" height="120"></canvas>
+    <div class="flex items-end justify-end gap-2">
+      <button type="button" id="pesquisar"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">
+        🔍 Pesquisar
+      </button>
+      <button type="button" id="btnPDF"
+              class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition">
+        📄 Gerar PDF
+      </button>
     </div>
+  </form>
 
+  <!-- Resultados -->
+  <div id="resultado" class="hidden">
+    <table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
+      <thead class="bg-blue-700 text-white">
+        <tr>
+          <th class="px-4 py-2 text-left">Modelo</th>
+          <th class="px-4 py-2 text-left">Total Peças</th>
+          <th class="px-4 py-2 text-left">Valor Total (R$)</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaResultados" class="divide-y divide-gray-200"></tbody>
+    </table>
+
+    <h3 class="text-lg font-semibold text-gray-700 mt-8 mb-2">Produção por Modelo</h3>
+    <canvas id="graficoProducao" height="100"></canvas>
+  </div>
 </div>
 
-<!-- Chart.js -->
+<!-- Bibliotecas -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
 <script>
-const ctx = document.getElementById("graficoProducao").getContext("2d");
-let grafico = new Chart(ctx, {
-    type: "bar",
-    data: {
-        labels: [],
-        datasets: [{
-            label: "Total de Peças",
-            data: [],
-            backgroundColor: "rgba(37, 99, 235, 0.6)",
-            borderColor: "rgb(37, 99, 235)",
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: { beginAtZero: true }
-        }
-    }
-});
+const btnPesquisar = document.getElementById("pesquisar");
+const tabelaResultados = document.getElementById("tabelaResultados");
+const graficoCanvas = document.getElementById("graficoProducao");
+let grafico = null;
 
-document.getElementById("filtroForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const response = await fetch("/consultar_producao_dados", { method: "POST", body: formData });
-    const data = await response.json();
+// === Pesquisar Produção ===
+btnPesquisar.addEventListener("click", async () => {
+  const operador = document.getElementById("operador").value.trim();
+  const data_inicial = document.getElementById("data_inicio").value;
+  const data_final = document.getElementById("data_fim").value;
 
-    // Atualiza tabela
-    const tbody = document.querySelector("#tabelaProducao tbody");
-    tbody.innerHTML = "";
-    if (data.modelos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="py-6 text-gray-400">Nenhum resultado encontrado.</td></tr>`;
-    } else {
-        data.modelos.forEach((modelo, i) => {
-            tbody.innerHTML += `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3 font-medium">${modelo}</td>
-                    <td class="px-4 py-3">${data.quantidades[i]}</td>
-                    <td class="px-4 py-3">R$ ${data.valores[i].toFixed(2)}</td>
-                </tr>`;
-        });
+  try {
+    const formData = new FormData();
+    formData.append("operador", operador);
+    formData.append("data_inicial", data_inicial);
+    formData.append("data_final", data_final);
+
+    const resp = await fetch("/consultar_producao_dados", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!resp.ok) throw new Error("Erro ao buscar dados");
+    const data = await resp.json();
+
+    if (!data.modelos || data.modelos.length === 0) {
+      alert("Nenhum resultado encontrado.");
+      return;
     }
+
+    document.getElementById("resultado").classList.remove("hidden");
+
+    tabelaResultados.innerHTML = data.modelos.map((modelo, i) => `
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-2">${modelo}</td>
+        <td class="px-4 py-2">${data.quantidades[i]}</td>
+        <td class="px-4 py-2">R$ ${data.valores[i].toFixed(2)}</td>
+      </tr>
+    `).join("");
 
     // Atualiza gráfico
-    grafico.data.labels = data.modelos;
-    grafico.data.datasets[0].data = data.quantidades;
-    grafico.update();
+    if (grafico) grafico.destroy();
+    grafico = new Chart(graficoCanvas, {
+      type: "bar",
+      data: {
+        labels: data.modelos,
+        datasets: [{
+          label: "Total de Peças",
+          data: data.quantidades,
+          backgroundColor: "#2563eb"
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+        },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao carregar dados de produção.");
+  }
+});
+
+// === Gerar PDF ===
+document.getElementById("btnPDF").addEventListener("click", async () => {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p", "mm", "a4");
+  const content = document.querySelector("main");
+  const canvas = await html2canvas(content, { scale: 2 });
+  const imgData = canvas.toDataURL("image/png");
+  const imgProps = pdf.getImageProperties(imgData);
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+  // Cabeçalho
+  pdf.setFontSize(16);
+  pdf.text("Relatório de Produção", 10, 10);
+  pdf.setFontSize(10);
+  pdf.text(Gerado em: ${new Date().toLocaleDateString('pt-BR')}, 10, 16);
+
+  // Adiciona imagem (conteúdo da tela)
+  pdf.addImage(imgData, "PNG", 0, 20, pdfWidth, pdfHeight - 20);
+
+  const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+  pdf.save(Consulta_Producao_${dataAtual}.pdf);
 });
 </script>
 
-</body>
-</html>
+{% endblock %}

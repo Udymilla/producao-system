@@ -1,49 +1,35 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lançar Produção - Sistema Dadalto</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+{% extends "base.html" %}
+{% block title %}Lançar Produção{% endblock %}
+{% block page_title %}Lançar Ficha de Produção{% endblock %}
+{% set back_url = '/dashboard' %}
 
-  <!-- Cabeçalho -->
-  <header class="bg-blue-800 text-white py-4 shadow-md">
-    <div class="container mx-auto flex justify-between items-center px-6">
-      <h1 class="text-2xl font-bold tracking-wide">Lançar Produção</h1>
-      <a href="/dashboard" class="text-sm bg-gray-200 text-blue-800 px-3 py-1 rounded hover:bg-gray-300 transition">⬅ Voltar</a>
+{% block content %}
+<div class="flex justify-center mt-10">
+  <form action="/lancar" method="post"
+        class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+
+    <h2 class="text-2xl font-semibold text-gray-700 text-center mb-6">
+      Registrar Produção
+    </h2>
+
+    <div class="mb-4">
+      <label class="block text-gray-700 font-medium mb-1">Operador:</label>
+      <input type="text" name="operador" required
+             class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
     </div>
-  </header>
 
-  <!-- Formulário -->
-  <main class="flex-1 flex justify-center items-start py-10">
-    <form method="post" action="/lancar" class="bg-white shadow-md rounded-xl p-8 w-full max-w-lg">
-      <h2 class="text-xl font-semibold text-gray-700 mb-6">Nova Ficha de Produção</h2>
+    <div class="mb-4">
+      <label class="block text-gray-700 font-medium mb-1">Modelo:</label>
+      <select name="modelo" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        {% for m in modelos %}
+          <option value="{{ m }}">{{ m }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-      <!-- Número inicial -->
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Número Inicial da Ficha:</label>
-        <input name="numero_inicial" type="number" min="1" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: 3400" required>
-      </div>
-
-      <!-- Quantidade de fichas -->
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Quantidade de Fichas:</label>
-        <input name="qtd_fichas" type="number" min="1" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: 50" required>
-      </div>
-
-      <!-- Operador -->
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Operador:</label>
-        <input name="operador" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Digite o nome do funcionario" required>
-      </div>
-
-      <!-- Modelo -->
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Modelo:</label>
-        <select name="modelo" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" required>
-          <option value="">Selecione um modelo</option>
+    <div class="mb-4">
+      <label class="block text-gray-700 font-medium mb-1">Função:</label>
+      <select name="funcao" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
           <option>AVENTAL BARBEIRO</option>
           <option>AVENTAL DE 1 RASPA</option>
           <option>AVENTAL DE 1 VAQUETA</option>
@@ -84,56 +70,32 @@
           <option>PERNEIRA DE EMENDA</option>
           <option>PERNEIRA DE FIVELA</option>
           <option>PERNEIRA DE VELCRO</option>
-        </select>
+      </select>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Quantidade por Ficha:</label>
+        <input type="number" name="quantidade" min="50" value="50"
+               class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
       </div>
-
-      <!-- Função -->
-      <div class="mb-4">
-        <label class="block text-gray-700 font-medium mb-2">Função:</label>
-        <select name="funcao" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" required>
-          <option value="">Selecione a função</option>
-          <option>CORTADOR</option>
-          <option>AMONTOADOR</option>
-          <option>COLADOR</option>
-          <option>REFORCADOR</option>
-          <option>REFILAR</option>
-          <option>PASSAR</option>
-          <option>PASSAR LUVA</option>
-          <option>REVISAR E EMPACOTAR</option>
-          <option>VIRADOR</option>
-          <option>BAIXA COSTURA</option>
-          <option>EMENDAR DORSO</option>
-          <option>FECHAR LUVA</option>
-          <option>LUVA COMPLETA</option>
-          <option>PASSAR VIES</option>
-          <option>PREGAR OVO + ELASTICO</option>
-          <option>FECHAR LUVA + PREGAR PUNHO MALHA</option>
-          <option>PREGAR OVO</option>
-          <option>PREGAR ELASTICO</option>
-          <option>PREGAR DORSO + FIVELA</option>
-          <option>PREGAR FORCHETA</option>
-          <option>PREGAR DEDÃO</option>
-          <option>PREGAR DEDAO</option>
-        </select>
+      <div>
+        <label class="block text-gray-700 font-medium mb-1">Qtd. de Fichas:</label>
+        <input type="number" name="qtd_fichas" min="1" value="1"
+               class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
       </div>
+    </div>
 
-      <!-- Quantidade por ficha -->
-      <div class="mb-6">
-        <label class="block text-gray-700 font-medium mb-2">Quantidade por Ficha:</label>
-        <input name="quantidade" type="number" min="1" class="w-full border border-gray-300 rounded-lg p-2 focus:outline-blue-500" placeholder="Ex: 20" required>
-      </div>
+    <div class="mb-6">
+      <label class="block text-gray-700 font-medium mb-1">Número Inicial:</label>
+      <input type="number" name="numero_inicial" 
+             class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+    </div>
 
-      <!-- Botão -->
-      <div class="flex justify-end mt-6">
-        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Lançar</button>
-      </div>
-    </form>
-  </main>
-
-  <!-- Rodapé -->
-  <footer class="bg-gray-100 py-4 text-center text-sm text-gray-500 border-t">
-    © 2025 Dadalto Couro · Sistema de Produção Interno
-  </footer>
-
-</body>
-</html>
+    <button type="submit"
+            class="w-full bg-blue-700 text-white py-2 rounded-lg font-semibold hover:bg-blue-800 transition">
+      💾 Lançar Produção
+    </button>
+  </form>
+</div>
+{% endblock %}

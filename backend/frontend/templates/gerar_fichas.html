@@ -1,60 +1,38 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Gerar Fichas</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f7f7f7;
-      margin: 40px;
-    }
-    form {
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      max-width: 400px;
-      margin: auto;
-    }
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      margin-top: 20px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-  </style>
-</head>
-<body>
-  <h2 style="text-align:center;">Gerar Fichas de Produção</h2>
-  <form action="/gerar_fichas" method="post">
-    <label for="modelo">Modelo:</label>
-    <select name="modelo" id="modelo" required>
-      {% for m in modelos %}
-        <option value="{{ m.nome_modelo }}">{{ m.nome_modelo }}</option>
-      {% endfor %}
-    </select>
+{% extends "base.html" %}
+{% block title %}Gerar Fichas - Sistema Dadalto{% endblock %}
+{% block page_title %}Gerar Fichas de Produção{% endblock %}
+{% set back_url = '/administracao' %}
 
-    <label for="qtd_fichas">Quantidade de Fichas:</label>
-    <input type="number" name="qtd_fichas" id="qtd_fichas" min="1" value="5" required>
+{% block content %}
+<div class="flex justify-center mt-10">
+  <form action="/gerar_fichas" method="post"
+        class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+    <h2 class="text-2xl font-semibold text-gray-700 text-center mb-6">
+      Gerar Fichas de Produção
+    </h2>
 
-    <button type="submit">Gerar Fichas</button>
+    <div class="mb-4">
+      <label for="modelo" class="block text-gray-700 font-medium mb-1">Modelo:</label>
+      <select name="modelo" id="modelo" required
+              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        {% for m in modelos %}
+          <option value="{{ m.nome_modelo }}">{{ m.nome_modelo }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-6">
+      <label for="qtd_fichas" class="block text-gray-700 font-medium mb-1">
+        Quantidade de Fichas:
+      </label>
+      <input type="number" name="qtd_fichas" id="qtd_fichas" min="1" value="5" required
+             class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+    </div>
+
+    <button type="submit"
+            class="w-full bg-blue-700 text-white py-2 rounded-lg font-semibold hover:bg-blue-800 transition">
+      📄 Gerar Fichas
+    </button>
   </form>
-</body>
-</html>
+</div>
+{% endblock %}

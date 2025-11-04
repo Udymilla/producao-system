@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Consultar Fichas{% endblock %}
+{% block page_title %}Consultar Fichas{% endblock %}
+{% set back_url = '/dashboard' %}
 
 {% block content %}
 <div class="flex flex-col items-center justify-center min-h-[80vh] p-6">
@@ -61,13 +63,6 @@
         {% else %}
         <p class="text-center text-gray-600 dark:text-gray-300 mt-4">Nenhuma ficha encontrada.</p>
         {% endif %}
-    </div>
-
-    <div class="mt-6">
-        <a href="/dashboard"
-           class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded shadow transition">
-            ⬅️ Voltar ao Dashboard
-        </a>
     </div>
 </div>
 {% endblock %}

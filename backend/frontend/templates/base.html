@@ -1,32 +1,46 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema de Produção{% endblock %}</title>
-    <link rel="icon" type="image/png" href="/static/img/favicon.png">
-    <link rel="stylesheet" href="/static/css/output.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Sistema de Produção Dadalto{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen flex flex-col">
-    <!-- Botão fixo de voltar -->
-    <a href="/dashboard"
-       class="fixed top-4 left-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded shadow-md transition">
-        ⬅ Voltar ao Dashboard
-    </a>
+<body class="bg-gray-100 min-h-screen flex flex-col">
 
-    <!-- Conteúdo principal -->
-    <main class="flex-1 flex flex-col items-center justify-start pt-20 pb-10 px-6">
-        <div class="w-full max-w-5xl bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 border border-gray-200 dark:border-gray-700">
-            {% block content %}
-            <!-- O conteúdo das páginas vai aqui -->
-            {% endblock %}
-        </div>
-    </main>
+  <!-- ===== Cabeçalho Azul ===== -->
+  <header class="bg-blue-800 text-white shadow-md">
+    <div class="container mx-auto flex justify-between items-center px-6 py-4">
 
-    <!-- Rodapé -->
-    <footer class="text-center py-4 text-sm text-gray-600 dark:text-gray-400">
-        &copy; {{ now().year }} Sistema de Produção Dadalto — Todos os direitos reservados.
-    </footer>
+      <!-- Título da Página -->
+      <h1 class="text-2xl font-bold tracking-wide">
+        {% block page_title %}{% endblock %}
+      </h1>
+
+      <!-- Botões do Cabeçalho -->
+      <div class="flex items-center gap-2">
+        {% block header_extra %}{% endblock %}
+        {% if back_url %}
+        <a href="{{ back_url }}"
+           class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white transition">
+          ⬅ Voltar
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Corpo Principal ===== -->
+  <main class="flex-1 container mx-auto px-6 py-8">
+    {% block content %}
+    {% endblock %}
+  </main>
+
+  <!-- ===== Rodapé ===== -->
+  <footer class="bg-gray-100 py-4 text-center text-sm text-gray-500 border-t">
+    © {{ now().year }} Sistema de Produção Dadalto — Todos os direitos reservados.
+  </footer>
+
 </body>
 </html>
