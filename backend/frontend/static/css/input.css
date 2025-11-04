@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  background-color: #f8fafc; /* fundo cinza-claro */
+}
+
+a {
+  text-decoration: none !important;
+}
