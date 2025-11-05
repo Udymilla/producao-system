@@ -17,7 +17,7 @@
       <label for="operador" class="block text-sm font-medium text-gray-700">Operador</label>
       <input type="text" id="operador" name="operador"
              class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:ring-blue-300"
-             placeholder="Ex: Rafael">
+             placeholder="Ex: Udymilla">
     </div>
 
     <div>
@@ -49,10 +49,10 @@
     <table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
       <thead class="bg-blue-700 text-white">
         <tr>
+          <th class="px-4 py-2 text-left">Nº Ficha</th>
           <th class="px-4 py-2 text-left">Modelo</th>
           <th class="px-4 py-2 text-left">Total Peças</th>
           <th class="px-4 py-2 text-left">Valor Total (R$)</th>
-          <th class="px-4 py-2 text-left">Num de Ficha</th>
         </tr>
       </thead>
       <tbody id="tabelaResultados" class="divide-y divide-gray-200"></tbody>
@@ -105,6 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       tabelaResultados.innerHTML = data.modelos.map((modelo, i) => `
         <tr class="hover:bg-gray-50">
+          <td class="px-4 py-2">${data.fichas[i] || '-'}</td>
           <td class="px-4 py-2">${modelo}</td>
           <td class="px-4 py-2">${data.quantidades[i]}</td>
           <td class="px-4 py-2">R$ ${data.valores[i].toFixed(2)}</td>

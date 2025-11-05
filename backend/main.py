@@ -601,39 +601,44 @@ async def consultar_producao_page(request: Request):
 
 @app.post("/consultar_producao_dados")
 async def consultar_producao_dados(
-    operador: str = Form(""),
-    data_inicial: str = Form(""),
-    data_final: str = Form("")
+    operador: str = Form(...),
+    data_inicial: str = Form(None),
+    data_final: str = Form(None),
+    db: Session = Depends(get_db)
 ):
-    db = SessionLocal()
+    query = db.query(Ficha).join(UsuarioOperacional).filter(UsuarioOperacional.nome.ilike(f"%{operador}%"))
 
-    query = db.query(
-        Producao.modelo,
-        func.sum(Producao.quantidade).label("total_pecas"),
-        func.sum(Producao.valor).label("total_valor")
-    )
-
-    if operador:
-        query = query.filter(Producao.operador.ilike(f"%{operador}%"))
     if data_inicial:
-        query = query.filter(Producao.criado_em >= data_inicial)
+        query = query.filter(Ficha.criado_em >= data_inicial)
     if data_final:
-        query = query.filter(Producao.criado_em <= data_final)
-
-    query = query.group_by(Producao.modelo).order_by(func.sum(Producao.quantidade).desc())
+        query = query.filter(Ficha.criado_em <= data_final)
 
     resultados = query.all()
 
-    db.close()
+    modelos = []
+    quantidades = []
+    valores = []
+    fichas = []
 
-    data = {
-        "modelos": [r.modelo for r in resultados],
-        "quantidades": [int(r.total_pecas or 0) for r in resultados],
-        "valores": [float(r.total_valor or 0) for r in resultados],
+    for ficha in resultados:
+        modelos.append(ficha.modelo)
+        quantidades.append(ficha.quantidade_total)
+        fichas.append(ficha.numero_ficha)
+
+        valor_unit = (
+            db.query(ValorModelo)
+            .filter(ValorModelo.modelo == ficha.modelo)
+            .first()
+        )
+        valor_total = ficha.quantidade_total * (valor_unit.valor_unitario if valor_unit else 0)
+        valores.append(valor_total)
+
+    return {
+        "modelos": modelos,
+        "quantidades": quantidades,
+        "valores": valores,
+        "fichas": fichas
     }
-
-    return JSONResponse(content=data)
-
     # ==============================
 # IMPORTS (deixe junto dos demais)
 # ==============================
