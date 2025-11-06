@@ -120,21 +120,22 @@ class Usuario(Base):
     senha = Column(String, nullable=False)
     perfil = Column(String, nullable=False)  # Ex: 'administrador', 'lider', 'producao'
 
-
 # ==========================================================
 # 🔹 VALORES POR MODELO
 # ==========================================================
 class ValorModelo(Base):
-    __tablename__ = "valores_modelos"
+    __tablename__ = "valores_modelos"  # <== ESSA LINHA É OBRIGATÓRIA
 
     id = Column(Integer, primary_key=True, index=True)
-    modelo = Column(String, nullable=False)
-    funcao = Column(String)
+    modelo_id = Column(Integer, ForeignKey("formularios.id"), nullable=False)
+    funcao = Column(String, nullable=False)
     valor_unitario = Column(Float, nullable=False)
     tamanho = Column(String, nullable=True)
     url_imagem = Column(String, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
+    atualizado_em = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint("modelo", "funcao", name="uq_modelo_funcao"),
-    )
+        UniqueConstraint("modelo_id", "funcao", "tamanho", name="uq_modelo_funcao_tamanho"),)
+    
+    modelo_ref = relationship("Formulario")

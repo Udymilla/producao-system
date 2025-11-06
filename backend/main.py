@@ -94,24 +94,33 @@ async def add_modelo(nome_modelo: str = Form(...), db: Session = Depends(get_db)
     db.commit()
     return RedirectResponse("/modelos", status_code=303)
 
+from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
+
 @app.post("/modelos/add_valor")
-async def add_valor(
-    modelo_id: int = Form(...),
-    funcao: str = Form(...),
-    valor_unitario: float = Form(...),
-    tamanho: str = Form(None),
-    db: Session = Depends(get_db)
-):
+async def add_valor(request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    modelo_id = int(form.get("modelo_id"))
+    funcao = form.get("funcao").strip()
+    valor_unitario = float(form.get("valor_unitario").replace(",", "."))
+    tamanho = form.get("tamanho") or None
+
     novo_valor = ValorModelo(
         modelo_id=modelo_id,
         funcao=funcao,
         valor_unitario=valor_unitario,
         tamanho=tamanho
     )
-    db.add(novo_valor)
-    db.commit()
-    return RedirectResponse("/modelos", status_code=303)
 
+    db.add(novo_valor)
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(e)
+        raise HTTPException(status_code=400, detail="Erro ao salvar valor (já existe?)")
+
+    return RedirectResponse(url="/modelos", status_code=303)
 @app.post("/modelos/editar_inline")
 async def editar_valor_inline(
     id: int = Form(...),
@@ -124,11 +133,19 @@ async def editar_valor_inline(
     valor = db.query(ValorModelo).filter(ValorModelo.id == id).first()
     if not valor:
         raise HTTPException(status_code=404, detail="Valor não encontrado.")
+    
     valor.modelo_id = modelo_id
-    valor.funcao = funcao
+    valor.funcao = funcao.strip()
     valor.valor_unitario = valor_unitario
     valor.tamanho = tamanho
-    db.commit()
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(e)
+        raise HTTPException(status_code=400, detail="Erro ao atualizar valor.")
+
     return RedirectResponse("/modelos", status_code=303)
 
 # ✅ Rota para listar lançamentos

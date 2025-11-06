@@ -57,16 +57,12 @@
 
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Modelo</label>
-          <select
-            name="modelo_id"
-            id="modelo_id"
-            required
-            class="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200"
-          >
+          <select name="modelo_id" id="modelo_id" required
+             class="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200">
             <option value="">Selecione um modelo</option>
             {% for m in modelos %}
-              <option value="{{ m.id }}">{{ m.nome_modelo }}</option>
-            {% endfor %}
+            <option value="{{ m.id }}">{{ m.nome_modelo }}</option>
+             {% endfor %}
           </select>
         </div>
 
@@ -145,10 +141,18 @@
               <td class="px-4 py-2">R$ {{ "%.2f"|format(v.valor_unitario) }}</td>
               <td class="px-4 py-2">{{ v.tamanho or "-" }}</td>
               <td class="px-4 py-2 text-center space-x-2">
-                <button
-                  class="text-blue-600 hover:underline"
-                  onclick="editarValor({{ v.id }}, '{{ v.modelo_id }}', '{{ v.funcao }}', '{{ v.valor_unitario }}', '{{ v.tamanho or '' }}')"
-                >Editar</button>
+              <script>
+                function editarValor(botao) {
+                document.getElementById("valor_id").value = botao.dataset.id;
+                document.getElementById("modelo_id").value = botao.dataset.modelo;
+                document.getElementById("funcao").value = botao.dataset.funcao;
+                document.getElementById("valor_unitario").value = botao.dataset.valor;
+                document.getElementById("tamanho").value = botao.dataset.tamanho;
+
+                document.getElementById("formValor").action = "/modelos/editar_inline";
+                document.getElementById("valor_unitario").focus();
+              }
+              </script>
                 <a href="/modelos/excluir/{{ v.id }}" class="text-red-600 hover:underline">Excluir</a>
               </td>
             </tr>
@@ -163,23 +167,19 @@
 </div>
 
 <script>
-  function editarValor(id, modelo_id, funcao, valor, tamanho) {
-    document.getElementById("valor_id").value = id;
-    document.getElementById("modelo_id").value = modelo_id;
-    document.getElementById("funcao").value = funcao;
-    document.getElementById("valor_unitario").value = valor;
-    document.getElementById("tamanho").value = tamanho;
-    document.getElementById("salvarBtn").textContent = "Atualizar Valor";
-    document.getElementById("cancelarBtn").classList.remove("hidden");
-    document.getElementById("valorForm").action = "/modelos/editar_inline";
-  }
+function editarValor(id, modelo_id, funcao, valor, tamanho) {
+  // Preenche o formulário de edição com os dados do item
+  document.getElementById("valor_id").value = id;
+  document.getElementById("modelo_id").value = modelo_id;
+  document.getElementById("funcao").value = funcao;
+  document.getElementById("valor_unitario").value = valor;
+  document.getElementById("tamanho").value = tamanho;
 
-  function cancelarEdicao() {
-    document.getElementById("valorForm").reset();
-    document.getElementById("valor_id").value = "";
-    document.getElementById("salvarBtn").textContent = "Salvar Valor";
-    document.getElementById("cancelarBtn").classList.add("hidden");
-    document.getElementById("valorForm").action = "/modelos/add_valor";
-  }
+  // Altera a ação do formulário para o endpoint de edição
+  document.getElementById("formValor").action = "/modelos/editar_inline";
+
+  // Foca no campo de valor para edição imediata
+  document.getElementById("valor_unitario").focus();
+}
 </script>
 {% endblock %}
