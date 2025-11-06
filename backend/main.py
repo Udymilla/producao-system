@@ -78,7 +78,58 @@ def listar_producoes(
         }
         for p in producoes
     ]
+@app.get("/modelos", response_class=HTMLResponse)
+async def modelos_page(request: Request, db: Session = Depends(get_db)):
+    modelos = db.query(Formulario).all()
+    valores = db.query(ValorModelo).all()
+    return templates.TemplateResponse(
+        "modelos.html",
+        {"request": request, "modelos": modelos, "valores": valores}
+    )
 
+@app.post("/modelos/add")
+async def add_modelo(nome_modelo: str = Form(...), db: Session = Depends(get_db)):
+    novo = Formulario(nome_modelo=nome_modelo)
+    db.add(novo)
+    db.commit()
+    return RedirectResponse("/modelos", status_code=303)
+
+@app.post("/modelos/add_valor")
+async def add_valor(
+    modelo_id: int = Form(...),
+    funcao: str = Form(...),
+    valor_unitario: float = Form(...),
+    tamanho: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    novo_valor = ValorModelo(
+        modelo_id=modelo_id,
+        funcao=funcao,
+        valor_unitario=valor_unitario,
+        tamanho=tamanho
+    )
+    db.add(novo_valor)
+    db.commit()
+    return RedirectResponse("/modelos", status_code=303)
+
+@app.post("/modelos/editar_inline")
+async def editar_valor_inline(
+    id: int = Form(...),
+    modelo_id: int = Form(...),
+    funcao: str = Form(...),
+    valor_unitario: float = Form(...),
+    tamanho: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    valor = db.query(ValorModelo).filter(ValorModelo.id == id).first()
+    if not valor:
+        raise HTTPException(status_code=404, detail="Valor não encontrado.")
+    valor.modelo_id = modelo_id
+    valor.funcao = funcao
+    valor.valor_unitario = valor_unitario
+    valor.tamanho = tamanho
+    db.commit()
+    return RedirectResponse("/modelos", status_code=303)
 
 # ✅ Rota para listar lançamentos
 @app.get("/producoes", response_model=List[ProducaoResponse])
@@ -137,52 +188,6 @@ def resumo_por_operador(
         }
         for linha in resultado
     ]
-
-# ===== Cadastrar ou atualizar valor de modelo =====
-@app.get("/valores_modelos", response_class=HTMLResponse)
-async def listar_valores_modelos(request: Request):
-    db = SessionLocal()
-    valores = db.query(ValorModelo).order_by(ValorModelo.modelo.asc(), ValorModelo.funcao.asc()).all()
-    db.close()
-    return templates.TemplateResponse("valores_modelos.html", {"request": request, "valores": valores})
-
-
-@app.post("/valores_modelos", response_class=HTMLResponse)
-async def cadastrar_valor_modelo(request: Request,
-                                 modelo: str = Form(...),
-                                 funcao: str = Form(...),
-                                 valor: float = Form(...)):
-    db = SessionLocal()
-
-    existente = db.query(ValorModelo).filter(
-        ValorModelo.modelo == modelo,
-        ValorModelo.funcao == funcao
-    ).first()
-
-    if existente:
-        existente.valor_unitario = valor
-        mensagem = f"🔄 Valor atualizado para {modelo} - {funcao}: R$ {valor:.2f}"
-    else:
-        novo = ValorModelo(modelo=modelo, funcao=funcao, valor_unitario=valor)
-        db.add(novo)
-        mensagem = f"✅ Novo valor cadastrado: {modelo} - {funcao} = R$ {valor:.2f}"
-
-    db.commit()
-    valores = db.query(ValorModelo).order_by(ValorModelo.modelo.asc(), ValorModelo.funcao.asc()).all()
-    db.close()
-
-    return templates.TemplateResponse("valores_modelos.html", {
-        "request": request,
-        "valores": valores,
-        "mensagem": mensagem
-    })
-
-@app.get("/funcoes_por_modelo/{modelo}")
-def funcoes_por_modelo(modelo: str):
-    db: Session = SessionLocal()
-    funcoes = db.query(ValorModelo.funcao).filter(ValorModelo.modelo == modelo).distinct().all()
-    return {"funcoes": [f[0] for f in funcoes]}
-
 
 from backend.models import Ficha, StatusFicha
 from backend.schemas import FichaCreate, FichaResponse
@@ -639,6 +644,7 @@ async def consultar_producao_dados(
         "valores": valores,
         "fichas": fichas
     }
+                                                                 
     # ==============================
 # IMPORTS (deixe junto dos demais)
 # ==============================
@@ -822,23 +828,3 @@ async def responder_ficha_submit(
         "titulo": "Produção lançada ✅",
         "mensagem": f"Ficha {ficha.numero_ficha} lançada para {operador} ({funcao}) – {ficha.quantidade_total} peças do modelo {ficha.modelo}."
     })
-
-@app.get("/cadastrar_modelos", response_class=HTMLResponse)
-async def cadastrar_modelos_page(request: Request):
-    return templates.TemplateResponse("cadastrar_modelos.html", {"request": request})
-
-@app.post("/cadastrar_modelo", response_class=HTMLResponse)
-async def cadastrar_modelo(request: Request, modelo: str = Form(...), valor: float = Form(...)):
-    db = SessionLocal()
-    existente = db.query(ValorModelo).filter(ValorModelo.modelo == modelo).first()
-    if existente:
-        existente.valor_unitario = valor
-    else:
-        db.add(ValorModelo(modelo=modelo, valor_unitario=valor))
-    db.commit()
-    db.close()
-    return templates.TemplateResponse("cadastrar_modelos.html", {
-        "request": request,
-        "mensagem": f"Modelo <b>{modelo}</b> salvo com sucesso (R$ {valor:.2f})."
-    })
-

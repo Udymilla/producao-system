@@ -1,9 +1,11 @@
+from datetime import datetime
+import enum
 from sqlalchemy import (
     Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Enum, Text, UniqueConstraint
 )
-from sqlalchemy.orm import relationship
-from datetime import datetime
-import enum
+from sqlalchemy.orm import relationship, declarative_base
+
+# ✅ Garante que o Base é o mesmo em todo o projeto
 from backend.database import Base
 
 
@@ -20,7 +22,7 @@ class StatusFicha(str, enum.Enum):
 # 🔹 USUÁRIOS DO SISTEMA (admin / líderes)
 # ==========================================================
 class UsuarioSistema(Base):
-    _tablename_ = "usuarios_sistema"
+    __tablename__ = "usuarios_sistema"  # ✅ Nome da tabela definido
 
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(100), nullable=False)
@@ -35,15 +37,15 @@ class UsuarioSistema(Base):
 # 🔹 USUÁRIOS OPERACIONAIS (PIN simplificado para o QR)
 # ==========================================================
 class UsuarioOperacional(Base):
-    _tablename_ = "usuarios_operacionais"
+    __tablename__ = "usuarios_operacionais"
 
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     senha = Column(String, nullable=False)
     funcao = Column(String, nullable=False)  # costura, acabamento, corte, etc.
-    ativo = Column(Integer, default=1)  # 1 = ativo, 0 = inativo
+    ativo = Column(Integer, default=1)       # 1 = ativo, 0 = inativo
 
-    # 🔗 Relacionamentos
+    # 🔗 RELACIONAMENTOS
     fichas = relationship("Ficha", back_populates="usuario")
     producoes = relationship("Producao", back_populates="usuario")
 
@@ -52,7 +54,7 @@ class UsuarioOperacional(Base):
 # 🔹 FORMULÁRIOS / MODELOS
 # ==========================================================
 class Formulario(Base):
-    _tablename_ = "formularios"
+    __tablename__ = "formularios"
 
     id = Column(Integer, primary_key=True, index=True)
     nome_modelo = Column(String(120), nullable=False)
@@ -65,11 +67,11 @@ class Formulario(Base):
 # 🔹 FICHAS
 # ==========================================================
 class Ficha(Base):
-    _tablename_ = "fichas"
+    __tablename__ = "fichas"
 
     id = Column(Integer, primary_key=True, index=True)
     numero_ficha = Column(String, unique=True, index=True)
-    modelo = Column(String, nullable=False)  # Ex: CAMISA OPERACIONAL
+    modelo = Column(String, nullable=False)  # nome do modelo (ex: CAMISA OPERACIONAL)
     funcao = Column(String, nullable=False)
     quantidade_total = Column(Integer, nullable=False)
     setor_atual = Column(String, nullable=True)
@@ -89,7 +91,7 @@ class Ficha(Base):
 # 🔹 PRODUÇÃO (Lançamentos feitos pelo sistema ou QR)
 # ==========================================================
 class Producao(Base):
-    _tablename_ = "producao"
+    __tablename__ = "producao"
 
     id = Column(Integer, primary_key=True, index=True)
     ficha_id = Column(Integer, ForeignKey("fichas.id"), nullable=False)
@@ -108,22 +110,22 @@ class Producao(Base):
 
 
 # ==========================================================
-# 🔹 USUÁRIOS DO SISTEMA DE LOGIN (acesso geral)
+# 🔹 USUÁRIOS DO SISTEMA DE LOGIN (geral)
 # ==========================================================
 class Usuario(Base):
-    _tablename_ = "usuarios"
+    __tablename__ = "usuarios"
 
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     senha = Column(String, nullable=False)
-    perfil = Column(String, nullable=False)  # Ex: administrador, líder, produção
+    perfil = Column(String, nullable=False)  # Ex: 'administrador', 'lider', 'producao'
 
 
 # ==========================================================
 # 🔹 VALORES POR MODELO
 # ==========================================================
 class ValorModelo(Base):
-    _tablename_ = "valores_modelos"
+    __tablename__ = "valores_modelos"
 
     id = Column(Integer, primary_key=True, index=True)
     modelo = Column(String, nullable=False)
@@ -133,6 +135,6 @@ class ValorModelo(Base):
     url_imagem = Column(String, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
 
-    _table_args_ = (
+    __table_args__ = (
         UniqueConstraint("modelo", "funcao", name="uq_modelo_funcao"),
     )
