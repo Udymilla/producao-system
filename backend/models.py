@@ -60,6 +60,7 @@ class Formulario(Base):
     nome_modelo = Column(String(120), nullable=False)
     tamanhos = Column(String(100))
     ativo = Column(Boolean, default=True)
+    url_imagem = Column(String, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
 
 

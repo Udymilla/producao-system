@@ -7,78 +7,53 @@
   <div class="bg-white shadow-lg rounded-2xl w-full max-w-2xl p-8 border border-gray-200">
     <h1 class="text-2xl font-bold text-center text-blue-600 mb-8">Cadastro de Formulário</h1>
 
-    <form method="POST" action="/cadastro_formulario" class="space-y-6">
+    <form action="/formularios/novo" method="post" enctype="multipart/form-data" class="space-y-4">
+  <!-- Nome -->
+  <div>
+    <label for="nome_modelo" class="block text-sm font-medium text-gray-700 mb-1">Nome do Modelo:</label>
+    <input type="text" id="nome_modelo" name="nome_modelo" required
+      class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+      placeholder="Ex.: LUVA DE FORCHETA" />
+  </div>
 
-      <!-- MODELO -->
-      <div>
-        <label for="modelo" class="block text-sm font-medium text-gray-700 mb-1">Modelo:</label>
-        <select id="modelo" name="modelo"
-          class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2">
-          <option value="">Selecione um modelo</option>
-          {% for m in modelos %}
-            <option value="{{ m.modelo }}">{{ m.modelo }}</option>
-          {% endfor %}
-        </select>
-      </div>
+  <!-- Imagem -->
+  <div>
+    <label for="url_imagem" class="block text-sm font-medium text-gray-700 mb-1">Imagem do Modelo:</label>
+    <input type="file" id="url_imagem" name="url_imagem" accept="image/*"
+      class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" />
+  </div>
 
-      <!-- FUNÇÃO -->
-      <div>
-        <label for="funcao" class="block text-sm font-medium text-gray-700 mb-1">Função:</label>
-        <input type="text" id="funcao" name="funcao" placeholder="Ex: Costura / Corte"
-          class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" />
-      </div>
+  <!-- Botão -->
+  <div class="pt-2">
+    <button type="submit"
+      class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition w-full">Salvar Formulário</button>
+  </div>
+</form>
 
-      <!-- COR -->
-      <div>
-        <label for="cor" class="block text-sm font-medium text-gray-700 mb-1">Cor (opcional):</label>
-        <input type="text" id="cor" name="cor" placeholder="Ex: Cinza / Azul"
-          class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" />
-      </div>
-
-      <!-- TAMANHOS -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Tamanhos disponíveis:</label>
-        <div class="grid grid-cols-3 gap-3">
-          {% for t in ["PP", "P", "M", "G", "GG", "XG", "XG2"] %}
-          <label class="flex items-center space-x-2">
-            <input type="checkbox" name="tamanho" value="{{ t }}"
-              class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-            <span>{{ t }}</span>
-          </label>
-          {% endfor %}
-        </div>
-      </div>
-
-      <!-- BOTÃO -->
-      <div class="pt-4">
-        <button type="submit"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg shadow-sm transition">
-          Salvar Formulário
-        </button>
-      </div>
-
-    </form>
 
     <hr class="my-8">
 
     <!-- MODELOS CADASTRADOS -->
-    <div>
-      <h2 class="text-lg font-semibold text-gray-800 mb-3">Formulários Cadastrados</h2>
-      {% if modelos %}
-        <ul class="divide-y divide-gray-200">
-          {% for m in modelos %}
-          <li class="py-2 text-gray-700 flex justify-between">
-            <span class="font-medium">{{ m.modelo }}</span>
-            {% if m.funcao %}<span class="text-sm text-gray-500">{{ m.funcao }}</span>{% endif %}
-          </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="text-sm text-gray-500 italic">(Nenhum formulário cadastrado ainda)</p>
-      {% endif %}
-    </div>
-  </div>
-</div>
+    {% for m in modelos %}
+<tr class="border-b hover:bg-gray-50">
+  <td class="px-4 py-2">{{ m.id }}</td>
+  <td class="px-4 py-2">{{ m.nome_modelo }}</td>
+  <td class="px-4 py-2">
+    {% if m.url_imagem %}
+      <img src="{{ m.url_imagem }}" alt="{{ m.nome_modelo }}" class="h-12 rounded shadow">
+    {% else %}
+      <span class="text-gray-400 text-sm">Sem imagem</span>
+    {% endif %}
+  </td>
+  <td class="px-4 py-2 text-center">
+    {% if m.ativo %}
+      <span class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-700">Ativo</span>
+    {% else %}
+      <span class="inline-block px-2 py-1 text-xs rounded bg-gray-200 text-gray-700">Inativo</span>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
 
 <!-- Script opcional para carregar função automaticamente -->
 <script>

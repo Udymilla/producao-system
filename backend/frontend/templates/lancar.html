@@ -14,18 +14,25 @@
     </h2>
 
     <div class="mb-4">
-      <label class="block text-gray-700 font-medium mb-1">Operador:</label>
-      <input type="text" name="operador" required
-             class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+      <label for="operador" class="block text-sm font-medium mb-1 text-gray-700">Operador:</label>
+<select name="operador" id="operador" class="w-full border rounded-md px-2 py-1 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+  <option value="">Selecione o operador</option>
+  {% for op in operadores %}
+    <option value="{{ op.nome }}">{{ op.nome }}</option>
+  {% endfor %}
+</select>
+
     </div>
 
     <div class="mb-4">
-      <label class="block text-gray-700 font-medium mb-1">Modelo:</label>
-      <select name="modelo" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-        {% for m in modelos %}
-          <option value="{{ m }}">{{ m }}</option>
-        {% endfor %}
-      </select>
+      <label for="modelo" class="block text-sm font-medium mb-1 text-gray-700">Modelo:</label>
+<select name="modelo" id="modelo" class="w-full border rounded-md px-2 py-1 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+  <option value="">Selecione um modelo</option>
+  {% for modelo in modelos %}
+    <option value="{{ modelo.nome_modelo }}">{{ modelo.nome_modelo }}</option>
+  {% endfor %}
+</select>
+
     </div>
 
     <div class="mb-4">

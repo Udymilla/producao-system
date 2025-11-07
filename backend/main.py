@@ -13,6 +13,9 @@ import qrcode
 import io
 import base64
 from datetime import datetime
+from fastapi import File, UploadFile
+import shutil, os
+
 
 # Cria as tabelas se ainda não existirem
 Base.metadata.create_all(bind=engine)
@@ -320,9 +323,18 @@ async def pagina_admin(request: Request):
     return templates.TemplateResponse("pagina.html", {"request": request, "titulo": "Administração do Sistema"})
 
 # ===== Página de Lançamento (GET) =====
+
 @app.get("/lancar", response_class=HTMLResponse)
-async def lancar_page(request: Request):
-    return templates.TemplateResponse("lancar.html", {"request": request})
+async def lancar_page(request: Request, db: Session = Depends(get_db)):
+    # Buscar todos os operadores e modelos ativos
+    operadores = db.query(UsuarioOperacional).filter(UsuarioOperacional.ativo == 1).all()
+    modelos = db.query(Formulario).filter(Formulario.ativo == True).all()
+    
+    return templates.TemplateResponse(
+        "lancar.html",
+        {"request": request, "operadores": operadores, "modelos": modelos}
+    )
+
 
 # ===== Receber envio do formulário (POST) =====
 @app.post("/lancar", response_class=HTMLResponse)
@@ -372,8 +384,8 @@ async def consultar_producao(request: Request):
     return templates.TemplateResponse("consultar_producao.html", {"request": request})
 
 @app.get("/cadastro_formulario", response_class=HTMLResponse)
-async def get_cadastro_formulario(request: Request, db: Session = Depends(get_db)):
-    modelos = db.query(ValorModelo).order_by(ValorModelo.modelo.asc()).all()
+async def cadastro_formulario_page(request: Request, db: Session = Depends(get_db)):
+    modelos = db.query(Formulario).order_by(Formulario.nome_modelo.asc()).all()
     return templates.TemplateResponse(
         "cadastro_formulario.html",
         {"request": request, "modelos": modelos}
@@ -485,120 +497,37 @@ async def login_operador_post(request: Request):
         "operador": operador
     })
 
-@app.post("/responder_ficha", response_class=HTMLResponse)
-async def responder_ficha(request: Request,
-                          token_qr: str = Form(...),
-                          operador: str = Form(...),
-                          funcao: str = Form(...),
-                          db: Session = Depends(get_db)):
+UPLOAD_DIR = "frontend/static/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-    ficha = db.query(Ficha).filter(Ficha.token_qr== token_qr).first()
-    if not ficha:
-        return templates.TemplateResponse("formulario_operador.html", {
-            "request": request,
-            "ficha": None
-        })
-
-    # pega o valor unitário do modelo
-    valor_registro = db.query(ValorModelo).filter(ValorModelo.modelo == ficha.modelo).first()
-    valor_unitario = valor_registro.valor_unitario if valor_registro else 0
-
-    # cria o registro de produção
-    nova_producao = Producao(
-        ficha_id=ficha.id,
-        operador=operador,
-        modelo=ficha.modelo,
-        servico=funcao,
-        tamanho="",
-        quantidade=ficha.quantidade_total,
-        valor=ficha.quantidade_total * valor_unitario
-    )
-
-    db.add(nova_producao)
-    db.commit()
-
-    return templates.TemplateResponse("pagina.html", {
-        "request": request,
-        "titulo": "Produção Registrada ✅",
-        "mensagem": f"Ficha {ficha.numero_ficha} lançada com sucesso para <b>{operador}</b>!"
-    })
-# ========= FORMULÁRIO ABERTO PELO QR (GET exibe; POST grava) =========
-@app.post("/responder_ficha", response_class=HTMLResponse)
-async def responder_ficha(
+@app.post("/formularios/novo")
+async def criar_formulario(
     request: Request,
-    token_qr: str = Form(...),
-    operador: str = Form(...),
-    funcao: str = Form(...),
-    quantidade: int = Form(...),
+    nome_modelo: str = Form(...),
+    url_imagem: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
-    ficha = db.query(Ficha).filter(Ficha.token_qr == token_qr).first()
-    if not ficha:
-        return templates.TemplateResponse(
-            "pagina.html",
-            {"request": request, "titulo": "Erro", "mensagem": "Ficha não encontrada."}
-        )
+    nome_modelo = nome_modelo.strip()
+    UPLOAD_DIR = "frontend/static/uploads"
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    
+    image_path = None
 
-    # valor unitário do modelo
-    vm = db.query(ValorModelo).filter(ValorModelo.modelo == ficha.modelo).first()
-    valor_unit = float(vm.valor_unitario) if vm else 0.0
-    valor_total = valor_unit * quantidade
+    if url_imagem:
+        filename = f"{nome_modelo.replace(' ', '')}{url_imagem.filename}"
+        save_path = os.path.join(UPLOAD_DIR, filename)
+        with open(save_path, "wb") as buffer:
+            shutil.copyfileobj(url_imagem.file, buffer)
+        image_path = f"/static/uploads/{filename}"
 
-    nova_producao = Producao(
-        ficha_id=ficha.id,
-        operador=operador,
-        modelo=ficha.modelo,
-        servico=funcao,
-        tamanho=None,
-        quantidade=quantidade,
-        valor=valor_total,
-    )
-
-    db.add(nova_producao)
+    # Cria novo formulário
+    novo = Formulario(nome_modelo=nome_modelo, url_imagem=image_path, ativo=True)
+    db.add(novo)
     db.commit()
-    db.close()
+    db.refresh(novo)
 
-    return templates.TemplateResponse(
-        "pagina.html",
-        {
-            "request": request,
-            "titulo": "Lançamento Registrado ✅",
-            "mensagem": f"Ficha {ficha.numero_ficha} lançada com sucesso para {operador} ({funcao}) – {quantidade} peças.",
-        },
-    )
-
-
-
-
-    # Gera número da ficha (última +1)
-    ultimo = db.query(Ficha).order_by(Ficha.id.desc()).first()
-    numero_ficha = (int(ultimo.numero_ficha) + 1) if ultimo else 1000
-
-    nova_ficha = Ficha(
-        numero_ficha=str(numero_ficha),
-        modelo=modelo,
-        funcao=funcao,
-        quantidade_total=quantidade,
-        setor_atual=funcao,
-    )
-
-    db.add(nova_ficha)
-    db.commit()
-
-    # Gera QR code
-    qr_data = f"Ficha {numero_ficha} - {modelo} - {funcao}"
-    qr_img = qrcode.make(qr_data)
-    buf = io.BytesIO()
-    qr_img.save(buf, format="PNG")
-    qr_code_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-
-    return templates.TemplateResponse("formulario_operador.html", {
-        "request": request,
-        "operador": operador,
-        "funcao": funcao,
-        "qr_code": qr_code_base64,
-        "numero_ficha": numero_ficha
-    })
+    # Redireciona de volta à tela principal
+    return RedirectResponse(url="/cadastro_formulario", status_code=303)
 
 @app.get("/funcionarios", response_class=HTMLResponse)
 async def funcionarios_page(request: Request):
