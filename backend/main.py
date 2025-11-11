@@ -563,40 +563,36 @@ async def consultar_producao_dados(
     data_final: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Ficha).join(UsuarioOperacional).filter(UsuarioOperacional.nome.ilike(f"%{operador}%"))
+    query = db.query(Producao).filter(Producao.operador.ilike(f"%{operador}%"))
 
+    # Filtros de data, se existirem
     if data_inicial:
-        query = query.filter(Ficha.criado_em >= data_inicial)
+        query = query.filter(Producao.criado_em >= data_inicial)
     if data_final:
-        query = query.filter(Ficha.criado_em <= data_final)
+        query = query.filter(Producao.criado_em <= data_final)
 
-    resultados = query.all()
+    resultados = query.order_by(Producao.criado_em.desc()).all()
+
+    if not resultados:
+        return {"erro": "Nenhum resultado encontrado."}
 
     modelos = []
     quantidades = []
     valores = []
     fichas = []
 
-    for ficha in resultados:
-        modelos.append(ficha.modelo)
-        quantidades.append(ficha.quantidade_total)
-        fichas.append(ficha.numero_ficha)
-
-        valor_unit = (
-            db.query(ValorModelo)
-            .filter(ValorModelo.modelo == ficha.modelo)
-            .first()
-        )
-        valor_total = ficha.quantidade_total * (valor_unit.valor_unitario if valor_unit else 0)
-        valores.append(valor_total)
+    for r in resultados:
+        modelos.append(r.modelo)
+        quantidades.append(r.quantidade)
+        fichas.append(r.ficha_id)
+        valores.append(r.valor or 0)
 
     return {
         "modelos": modelos,
         "quantidades": quantidades,
         "valores": valores,
-        "fichas": fichas
-    }
-                                                                 
+        "fichas": fichas,
+    }                                            
     # ==============================
 # IMPORTS (deixe junto dos demais)
 # ==============================
