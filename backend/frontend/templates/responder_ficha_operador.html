@@ -14,155 +14,59 @@
     --border-dark: #2b2b2b;
   }
 
-  body {
-    background-color: var(--bg-light);
-    color: var(--text-light);
-    transition: background-color 0.3s, color 0.3s;
-  }
-
+  body { background-color: var(--bg-light); color: var(--text-light); transition: background-color .3s, color .3s; }
   @media (prefers-color-scheme: dark) {
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-dark);
-    }
+    body { background-color: var(--bg-dark); color: var(--text-dark); }
   }
 
   .ficha-container {
-    max-width: 640px;
-    margin: 60px auto;
-    background-color: var(--card-light);
-    color: var(--text-light);
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    padding: 40px 45px;
-    transition: background-color 0.3s, color 0.3s;
+    max-width: 640px; margin: 60px auto; background-color: var(--card-light); color: var(--text-light);
+    border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.08); padding: 40px 45px; transition: background-color .3s, color .3s;
   }
-
   @media (prefers-color-scheme: dark) {
-    .ficha-container {
-      background-color: var(--card-dark);
-      color: var(--text-dark);
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.06);
-    }
+    .ficha-container { background-color: var(--card-dark); color: var(--text-dark); box-shadow: 0 0 10px rgba(255,255,255,.06); }
   }
 
-  .ficha-container h2 {
-    text-align: center;
-    font-weight: 700;
-    color: inherit;
-    margin-bottom: 25px;
-  }
-
-  .ficha-imagem {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 20px;
-  }
-
-  .ficha-imagem img {
-    max-width: 260px;
-    border-radius: 8px;
-    border: 1px solid var(--border-light);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .ficha-imagem img {
-      border-color: var(--border-dark);
-    }
-  }
-
-  .sem-imagem {
-    text-align: center;
-    font-style: italic;
-    color: #999;
-  }
+  .ficha-container h2 { text-align: center; font-weight: 700; margin-bottom: 25px; }
 
   .ficha-dados {
-    background: var(--card-light);
-    border: 1px solid var(--border-light);
-    border-radius: 10px;
-    padding: 16px 20px;
-    margin-bottom: 25px;
+    background: var(--card-light); border: 1px solid var(--border-light); border-radius: 10px; padding: 16px 20px; margin-bottom: 25px;
   }
-
   @media (prefers-color-scheme: dark) {
-    .ficha-dados {
-      background: var(--card-dark);
-      border-color: var(--border-dark);
-    }
+    .ficha-dados { background: var(--card-dark); border-color: var(--border-dark); }
   }
 
-  .ficha-dados p {
-    margin: 5px 0;
+  label { display: block; font-weight: 600; margin-top: 15px; margin-bottom: 5px; }
+  input[type="text"], input[type="number"], select {
+    width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-light);
+    background-color: var(--bg-light); color: var(--text-light); transition: all .3s;
   }
-
-  label {
-    display: block;
-    font-weight: 600;
-    margin-top: 15px;
-    margin-bottom: 5px;
-  }
-
-  input[type="text"],
-  input[type="number"],
-  select {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border-light);
-    background-color: var(--bg-light);
-    color: var(--text-light);
-    transition: all 0.3s ease;
-  }
-
-  input:focus,
-  select:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
-
+  input:focus, select:focus { outline: none; border-color: var(--primary); }
   @media (prefers-color-scheme: dark) {
-    input[type="text"],
-    input[type="number"],
-    select {
-      background-color: var(--card-dark);
-      color: var(--text-dark);
-      border-color: var(--border-dark);
-    }
-
-    input:focus,
-    select:focus {
-      border-color: #66aaff;
-    }
+    input[type="text"], input[type="number"], select { background-color: var(--card-dark); color: var(--text-dark); border-color: var(--border-dark); }
+    input:focus, select:focus { border-color: #66aaff; }
   }
 
   button {
-    width: 100%;
-    background-color: var(--primary);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    padding: 12px;
-    margin-top: 25px;
-    font-size: 16px;
-    transition: background-color 0.3s;
+    width: 100%; background-color: var(--primary); color: #fff; border: none; border-radius: 8px; font-weight: 600;
+    padding: 12px; margin-top: 25px; font-size: 16px; transition: background-color .3s;
   }
-
-  button:hover {
-    background-color: #0b5ed7;
-    cursor: pointer;
-  }
+  button:hover { background-color: #0b5ed7; cursor: pointer; }
 </style>
 
 <div class="ficha-container">
   <h2>Ficha {{ ficha.numero_ficha }}</h2>
 
-  <div class="ficha-imagem">
-    {% if imagem_url %}
-      <img src="{{ imagem_url }}" alt="Imagem do modelo">
+  <!-- IMAGEM DO MODELO (com fallback) -->
+  <div class="flex flex-col items-center justify-center mb-6">
+    {% if url_imagem %}
+      <img src="{{ url_imagem }}"
+           alt="Imagem do Modelo"
+           class="h-56 w-auto object-contain border border-gray-300 rounded-lg shadow-md mb-2 bg-white p-2">
     {% else %}
-      <p class="sem-imagem">Imagem não cadastrada para este modelo.</p>
+      <div class="flex flex-col items-center justify-center h-56 w-64 border border-dashed border-gray-400 rounded-lg">
+        <p class="text-gray-500 text-sm">Imagem não cadastrada para este modelo.</p>
+      </div>
     {% endif %}
   </div>
 
@@ -173,7 +77,8 @@
   </div>
 
   <form action="/responder_ficha" method="post">
-    <input type="hidden" name="token_qr" value="{{ token }}">
+    <!-- Se o endpoint espera 'token', mantenha 'name="token"'. Se espera 'token_qr', troque aqui. -->
+    <input type="hidden" name="token" value="{{ token }}">
 
     <label for="operador">Nome do operador:</label>
     <input type="text" id="operador" name="operador" value="{{ operador }}" required>

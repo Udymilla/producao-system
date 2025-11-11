@@ -25,6 +25,12 @@ templates.env.globals['now'] = datetime.now
 # Cria o app
 app = FastAPI(title="Sistema de Produção Dadalto")
 
+# Caminho absoluto para a pasta de uploads
+UPLOAD_DIR = os.path.join("frontend", "static")
+
+# Monta rota /static para servir imagens
+app.mount("/static", StaticFiles(directory=UPLOAD_DIR), name="static")
+
 # Adiciona o middleware de sessão
 app.add_middleware(SessionMiddleware, secret_key="supersegredo123")
 
@@ -728,6 +734,9 @@ async def responder_ficha_page(request: Request, token: str, db: Session = Depen
 
     if not ficha:
         return HTMLResponse("<h3>Ficha não encontrada ou QR inválido.</h3>", status_code=404)
+    
+    form_modelo = db.query(Formulario).filter(Formulario.nome_modelo == ficha.modelo).first()
+    url_imagem = form_modelo.url_imagem if form_modelo and form_modelo.url_imagem else None
 
     return templates.TemplateResponse("responder_ficha_operador.html", {
         "request": request,
@@ -738,6 +747,7 @@ async def responder_ficha_page(request: Request, token: str, db: Session = Depen
         "modelo": ficha.modelo,
         "quantidade": ficha.quantidade_total,
         "funcoes": FUNCOES_OPCOES,
+        "url_imagem": url_imagem,
     })
 
 @app.post("/responder_ficha", response_class=HTMLResponse)
@@ -746,31 +756,55 @@ async def responder_ficha_submit(
     token: str = Form(...),
     operador: str = Form(...),
     funcao: str = Form(...),
+    quantidade: int = Form(...),
 ):
     db = SessionLocal()
-    ficha = db.query(Ficha).filter(Ficha.token_qr== token).first()
+    try:
+        ficha = db.query(Ficha).filter(Ficha.token_qr == token).first()
+        if not ficha:
+            db.close()
+            return templates.TemplateResponse(
+                "pagina.html",
+                {
+                    "request": request,
+                    "titulo": "Erro",
+                    "mensagem": "Ficha não encontrada."
+                },
+            )
 
-    if not ficha:
+        # cria o registro de produção
+        nova_producao = Producao(
+            ficha_id=ficha.id,
+            operador=operador.strip(),
+            modelo=ficha.modelo,
+            servico=funcao.strip(),
+            tamanho=None,
+            quantidade=quantidade,
+            valor=0.0,
+        )
+
+        db.add(nova_producao)
+        db.commit()
+
+        # guarda infos antes de fechar
+        numero_ficha = ficha.numero_ficha
+        modelo = ficha.modelo
         db.close()
-        return HTMLResponse("<h3>Ficha não encontrada.</h3>", status_code=404)
 
-    # grava a produção
-    nova_producao = Producao(
-        ficha_id=ficha.id,
-        operador=operador,
-        modelo=ficha.modelo,
-        servico=funcao,
-        tamanho=None,
-        quantidade=ficha.quantidade_total,
-        valor=0.0  # se quiser, calculamos depois com tabela de valores
-    )
+        # renderiza página de sucesso
+        return templates.TemplateResponse(
+            "pagina.html",
+            {
+                "request": request,
+                "titulo": "Produção lançada ✅",
+                "mensagem": f"Ficha {numero_ficha} lançada para {operador} ({funcao}) – {quantidade} peças do modelo {modelo}.",
+            },
+        )
 
-    db.add(nova_producao)
-    db.commit()
-    db.close()
+    except Exception as e:
+        db.rollback()
+        print("Erro ao responder ficha:", e)
+        return HTMLResponse(f"<h3>Erro: {e}</h3>", status_code=500)
 
-    return templates.TemplateResponse("pagina.html", {
-        "request": request,
-        "titulo": "Produção lançada ✅",
-        "mensagem": f"Ficha {ficha.numero_ficha} lançada para {operador} ({funcao}) – {ficha.quantidade_total} peças do modelo {ficha.modelo}."
-    })
+    finally:
+        db.close()
