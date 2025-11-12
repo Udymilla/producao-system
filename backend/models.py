@@ -44,6 +44,7 @@ class UsuarioOperacional(Base):
     senha = Column(String, nullable=False)
     funcao = Column(String, nullable=False)  # costura, acabamento, corte, etc.
     ativo = Column(Integer, default=1)       # 1 = ativo, 0 = inativo
+    tipo = Column(String, nullable=True, default="operador")  # Ex: 'operacional', 'lider'
 
     # 🔗 RELACIONAMENTOS
     fichas = relationship("Ficha", back_populates="usuario")
