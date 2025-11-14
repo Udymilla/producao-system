@@ -4,9 +4,11 @@
 {% set back_url = '/dashboard' %}
 
 {% block header_extra %}
+{% if perfil == 'admin' %}
 <a href="/modelos" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded">
   💰 Painel de Valores
 </a>
+{% endif %}
 {% endblock %}
 
 {% block content %}

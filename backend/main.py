@@ -388,8 +388,9 @@ async def consultar_fichas(request: Request):
 @app.get("/consultar_producao", response_class=HTMLResponse)
 async def consultar_producao(request: Request):
     return templates.TemplateResponse("consultar_producao.html", {"request": request})
+    
 
-@app.get("/cadastro_formulario", response_class=HTMLResponse)
+@app.get("/cadastro_for      mulario", response_class=HTMLResponse)
 async def cadastro_formulario_page(request: Request, db: Session = Depends(get_db)):
     modelos = db.query(Formulario).order_by(Formulario.nome_modelo.asc()).all()
     return templates.TemplateResponse(
