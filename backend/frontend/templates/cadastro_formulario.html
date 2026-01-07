@@ -1,77 +1,122 @@
 {% extends "base.html" %}
-{% block title %}Cadastro de Formulario- Sistema Dadalto{% endblock %}
+
+{% block title %}Cadastro de Formulário - Sistema Dadalto{% endblock %}
 {% block page_title %}Cadastro de Formulário{% endblock %}
 {% set back_url = '/administracao' %}
+
 {% block content %}
 <div class="flex justify-center items-center py-10">
   <div class="bg-white shadow-lg rounded-2xl w-full max-w-2xl p-8 border border-gray-200">
-    <h1 class="text-2xl font-bold text-center text-blue-600 mb-8">Cadastro de Formulário</h1>
 
+    <h1 class="text-2xl font-bold text-center text-blue-600 mb-8">
+      Cadastro de Formulário
+    </h1>
+
+    <!-- FORMULÁRIO -->
     <form action="/formularios/novo" method="post" enctype="multipart/form-data" class="space-y-4">
-  <!-- Nome -->
-  <div>
-    <label for="nome_modelo" class="block text-sm font-medium text-gray-700 mb-1">Nome do Modelo:</label>
-    <input type="text" id="nome_modelo" name="nome_modelo" required
-      class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
-      placeholder="Ex.: LUVA DE FORCHETA" />
-  </div>
 
-  <!-- Imagem -->
-  <div>
-    <label for="url_imagem" class="block text-sm font-medium text-gray-700 mb-1">Imagem do Modelo:</label>
-    <input type="file" id="url_imagem" name="url_imagem" accept="image/*"
-      class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2" />
-  </div>
+      <!-- Nome -->
+      <div>
+        <label for="nome_modelo" class="block text-sm font-medium text-gray-700 mb-1">
+          Nome do Modelo:
+        </label>
+        <input
+          type="text"
+          id="nome_modelo"
+          name="nome_modelo"
+          required
+          placeholder="Ex.: LUVA DE FORCHETA"
+          class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+        />
+      </div>
 
-  <!-- Botão -->
-  <div class="pt-2">
-    <button type="submit"
-      class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition w-full">Salvar Formulário</button>
-  </div>
-</form>
+      <!-- Imagem -->
+      <div>
+        <label for="url_imagem" class="block text-sm font-medium text-gray-700 mb-1">
+          Imagem do Modelo:
+        </label>
+        <input
+          type="file"
+          id="url_imagem"
+          name="url_imagem"
+          accept="image/*"
+          class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2"
+        />
+      </div>
 
+      <!-- Botão -->
+      <div class="pt-2">
+        <button
+          type="submit"
+          class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition w-full"
+        >
+          Salvar Formulário
+        </button>
+      </div>
+    </form>
 
     <hr class="my-8">
 
-    <!-- MODELOS CADASTRADOS -->
-    {% for m in modelos %}
-<tr class="border-b hover:bg-gray-50">
-  <td class="px-4 py-2">{{ m.id }}</td>
-  <td class="px-4 py-2">{{ m.nome_modelo }}</td>
-  <td class="px-4 py-2">
-    {% if m.url_imagem %}
-      <img src="{{ m.url_imagem }}" alt="{{ m.nome_modelo }}" class="h-12 rounded shadow">
-    {% else %}
-      <span class="text-gray-400 text-sm">Sem imagem</span>
-    {% endif %}
-  </td>
-  <td class="px-4 py-2 text-center">
-    {% if m.ativo %}
-      <span class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-700">Ativo</span>
-    {% else %}
-      <span class="inline-block px-2 py-1 text-xs rounded bg-gray-200 text-gray-700">Inativo</span>
-    {% endif %}
-  </td>
-</tr>
-{% endfor %}
+    <!-- LISTA DE MODELOS -->
+    <h2 class="text-lg font-semibold text-gray-700 mb-4">
+      Modelos Cadastrados
+    </h2>
 
-<!-- Script opcional para carregar função automaticamente -->
+    <table class="w-full text-sm text-left border border-gray-200 rounded-lg overflow-hidden">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-2">ID</th>
+          <th class="px-4 py-2">Modelo</th>
+          <th class="px-4 py-2">Imagem</th>
+          <th class="px-4 py-2 text-center">Status</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for m in modelos %}
+        <tr class="border-b hover:bg-gray-50">
+          <td class="px-4 py-2">{{ m.id }}</td>
+
+          <td class="px-4 py-2">
+            {{ m.nome_modelo }}
+          </td>
+
+          <td class="px-4 py-2">
+            {% if m.url_imagem %}
+              <img
+                src="{{ m.url_imagem }}"
+                alt="{{ m.nome_modelo }}"
+                class="h-12 rounded shadow"
+              >
+            {% else %}
+              <span class="text-gray-400 text-sm">Sem imagem</span>
+            {% endif %}
+          </td>
+
+          <td class="px-4 py-2 text-center">
+            {% if m.ativo %}
+              <span class="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-700">
+                Ativo
+              </span>
+            {% else %}
+              <span class="inline-block px-2 py-1 text-xs rounded bg-gray-200 text-gray-700">
+                Inativo
+              </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+<!-- Evita reenvio do formulário ao atualizar a página -->
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const selectModelo = document.getElementById("modelo");
-  const funcaoInput = document.getElementById("funcao");
-
-  selectModelo.addEventListener("change", async () => {
-    const modelo = selectModelo.value;
-    if (!modelo) return;
-    try {
-      const r = await fetch(`/api/funcao_por_modelo?modelo=${encodeURIComponent(modelo)}`);
-      const data = await r.json();
-      funcaoInput.value = data.funcao || "";
-    } catch (e) {
-      console.error(e);
-    }
-  });
-});
+if (window.history.replaceState) {
+  window.history.replaceState(null, null, window.location.href);
+}
 </script>
+
 {% endblock %}
