@@ -1,12 +1,45 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-# ⚙️ ajuste o nome do banco conforme você criou no pgAdmin
-DATABASE_URL = "postgresql+psycopg2://postgres:1234@localhost/producao"
+# ======================================================
+# CONFIGURAÇÃO DO BANCO DE DADOS
+# ======================================================
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# 🔹 AJUSTE SE NECESSÁRIO:
+# Exemplo PostgreSQL:
+# postgresql://usuario:senha@localhost:5432/nome_do_banco
+DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/producao"
+
+# Cria o engine
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,        # True se quiser ver SQL no terminal
+    pool_pre_ping=True
+)
+
+# Session factory
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+# Base para os models
 Base = declarative_base()
 
-Base.metadata.create_all(bind=engine)
+# ======================================================
+# DEPENDÊNCIA DE BANCO (USADA NOS ROUTERS)
+# ======================================================
+
+def get_db():
+    """
+    Cria uma sessão de banco por request e fecha automaticamente.
+    Usar sempre com:
+        db: Session = Depends(get_db)
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
