@@ -8,7 +8,8 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 # 🔹 AJUSTE SE NECESSÁRIO:
 # Exemplo PostgreSQL:
 # postgresql://usuario:senha@localhost:5432/nome_do_banco
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/producao"
+DATABASE_URL = "postgresql+psycopg://postgres:producao@localhost:5432/producao"
+
 
 # Cria o engine
 engine = create_engine(
