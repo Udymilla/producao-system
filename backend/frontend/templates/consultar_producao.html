@@ -8,28 +8,29 @@
 <a href="/modelos" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded">
   💰 Painel de Valores
 </a>
-{% endif %}
+{% endif %}
 {% endblock %}
 
 {% block content %}
 <div class="bg-white rounded-lg shadow p-6">
+
   <!-- Filtro -->
   <form id="filtroForm" class="grid md:grid-cols-4 gap-4 mb-6">
     <div>
-      <label for="operador" class="block text-sm font-medium text-gray-700">Operador</label>
+      <label class="block text-sm font-medium text-gray-700">Operador</label>
       <input type="text" id="operador" name="operador"
              class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:ring-blue-300"
              placeholder="Ex: Udymilla">
     </div>
 
     <div>
-      <label for="data_inicio" class="block text-sm font-medium text-gray-700">Data Inicial</label>
+      <label class="block text-sm font-medium text-gray-700">Data Inicial</label>
       <input type="date" id="data_inicio" name="data_inicio"
              class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:ring-blue-300">
     </div>
 
     <div>
-      <label for="data_fim" class="block text-sm font-medium text-gray-700">Data Final</label>
+      <label class="block text-sm font-medium text-gray-700">Data Final</label>
       <input type="date" id="data_fim" name="data_fim"
              class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:ring-blue-300">
     </div>
@@ -46,6 +47,9 @@
     </div>
   </form>
 
+  <!-- Mensagem -->
+  <div id="mensagem" class="hidden mb-4 p-4 rounded text-center font-medium"></div>
+
   <!-- Resultados -->
   <div id="resultado" class="hidden">
     <table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
@@ -57,11 +61,12 @@
           <th class="px-4 py-2 text-left">Valor Total (R$)</th>
         </tr>
       </thead>
-      <tbody id="tabelaResultados" class="divide-y divide-
-      gray-200"></tbody>
+      <tbody id="tabelaResultados" class="divide-y divide-gray-200"></tbody>
     </table>
 
-    <h3 class="text-lg font-semibold text-gray-700 mt-8 mb-2">Produção por Modelo</h3>
+    <h3 class="text-lg font-semibold text-gray-700 mt-8 mb-2">
+      Produção por Modelo
+    </h3>
     <canvas id="graficoProducao" height="100"></canvas>
   </div>
 </div>
@@ -77,9 +82,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabelaResultados = document.getElementById("tabelaResultados");
   const graficoCanvas = document.getElementById("graficoProducao");
   const btnPDF = document.getElementById("btnPDF");
+  const mensagem = document.getElementById("mensagem");
+  const resultado = document.getElementById("resultado");
   let grafico = null;
 
-  // === Pesquisar Produção ===
   btnPesquisar.addEventListener("click", async () => {
     const operador = document.getElementById("operador").value.trim();
     const data_inicial = document.getElementById("data_inicio").value;
@@ -96,15 +102,19 @@ document.addEventListener("DOMContentLoaded", () => {
         body: formData
       });
 
-      if (!resp.ok) throw new Error("Erro ao buscar dados");
       const data = await resp.json();
 
-      if (!data.modelos || data.modelos.length === 0) {
-        alert("Nenhum resultado encontrado.");
+      mensagem.classList.add("hidden");
+      resultado.classList.add("hidden");
+
+      if (data.erro || !data.modelos || data.modelos.length === 0) {
+        mensagem.textContent = "Nenhum resultado encontrado para os filtros informados.";
+        mensagem.className = "mb-4 p-4 rounded text-center font-medium bg-yellow-100 text-yellow-800";
+        mensagem.classList.remove("hidden");
         return;
       }
 
-      document.getElementById("resultado").classList.remove("hidden");
+      resultado.classList.remove("hidden");
 
       tabelaResultados.innerHTML = data.modelos.map((modelo, i) => `
         <tr class="hover:bg-gray-50">
@@ -115,7 +125,6 @@ document.addEventListener("DOMContentLoaded", () => {
         </tr>
       `).join("");
 
-      // Atualiza gráfico
       if (grafico) grafico.destroy();
       grafico = new Chart(graficoCanvas, {
         type: "bar",
@@ -133,13 +142,15 @@ document.addEventListener("DOMContentLoaded", () => {
           scales: { y: { beginAtZero: true } }
         }
       });
+
     } catch (err) {
       console.error(err);
-      alert("Erro ao carregar dados de produção.");
+      mensagem.textContent = "Erro ao carregar dados de produção.";
+      mensagem.className = "mb-4 p-4 rounded text-center font-medium bg-red-100 text-red-700";
+      mensagem.classList.remove("hidden");
     }
   });
 
-  // === Gerar PDF ===
   btnPDF.addEventListener("click", async () => {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF("p", "mm", "a4");
@@ -147,15 +158,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const canvas = await html2canvas(content, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
-    const imgProps = pdf.getImageProperties(imgData);
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    pdf.setFontSize(16);
     pdf.text("Relatório de Produção", 10, 10);
-    pdf.setFontSize(10);
     pdf.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 10, 16);
-
     pdf.addImage(imgData, "PNG", 0, 20, pdfWidth, pdfHeight - 20);
 
     const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');

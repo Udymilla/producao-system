@@ -2,9 +2,17 @@ from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse
 from backend.utils import templates
 from sqlalchemy.orm import Session
-from backend.database import SessionLocal, get_db
-from backend.models import Producao, Ficha
+from sqlalchemy import func
+from backend.database import SessionLocal, get_db 
+from backend.models import (
+    Producao,
+    Ficha,
+    Formulario,
+    ValorModelo,
+    UsuarioOperacional
+)
 from backend.security import login_required
+from typing import Optional
 
 # ======================================================
 # CONFIG
@@ -118,44 +126,46 @@ async def consultar_producao_page(request: Request):
 # ======================================================
 
 @router.post("/consultar_producao_dados")
-@login_required
-async def consultar_producao_dados(
-    request: Request,
-    operador: str = Form(...),
-    data_inicial: str = Form(None),
-    data_final: str = Form(None),
+def consultar_producao_dados(
+    operador: str = Form(""),
+    data_inicial: str = Form(""),
+    data_final: str = Form(""),
     db: Session = Depends(get_db)
 ):
-    query = db.query(Producao).filter(
-        Producao.operador.ilike(f"%{operador}%")
+    query = (
+        db.query(
+            Producao.modelo.label("modelo"),
+            func.sum(Producao.quantidade).label("total_pecas"),
+            func.sum(Producao.valor).label("valor_total"),
+            func.array_agg(Producao.ficha_id).label("fichas")
+        )
+        .join(UsuarioOperacional, UsuarioOperacional.id == Producao.usuario_id)
     )
 
+    # 🔍 Filtro por operador (case-insensitive)
+    if operador:
+        query = query.filter(
+            UsuarioOperacional.nome.ilike(f"%{operador}%")
+        )
+
+    # 📅 Data inicial
     if data_inicial:
         query = query.filter(Producao.criado_em >= data_inicial)
+
+    # 📅 Data final
     if data_final:
         query = query.filter(Producao.criado_em <= data_final)
 
-    resultados = query.order_by(
-        Producao.criado_em.desc()
-    ).all()
+    query = query.group_by(Producao.modelo)
+
+    resultados = query.all()
 
     if not resultados:
-        return {"erro": "Nenhum resultado encontrado."}
-
-    modelos = []
-    quantidades = []
-    valores = []
-    fichas = []
-
-    for r in resultados:
-        modelos.append(r.modelo)
-        quantidades.append(r.quantidade)
-        fichas.append(r.ficha_id)
-        valores.append(r.valor or 0)
+        return {"modelos": []}
 
     return {
-        "modelos": modelos,
-        "quantidades": quantidades,
-        "valores": valores,
-        "fichas": fichas,
+        "modelos": [r.modelo for r in resultados],
+        "quantidades": [int(r.total_pecas or 0) for r in resultados],
+        "valores": [float(r.valor_total or 0) for r in resultados],
+        "fichas": [r.fichas[0] if r.fichas else "-" for r in resultados]
     }
