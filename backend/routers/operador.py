@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from backend.utils import templates
 from sqlalchemy.orm import Session
-
 from backend.database import SessionLocal, get_db
 from backend.models import Producao, Ficha
 from backend.security import login_required
@@ -12,7 +11,6 @@ from backend.security import login_required
 # ======================================================
 
 router = APIRouter()
-templates = Jinja2Templates(directory="backend/frontend/templates")
 
 # ======================================================
 # DASHBOARD

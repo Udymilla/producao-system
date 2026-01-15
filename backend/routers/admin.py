@@ -1,15 +1,13 @@
 from fastapi import APIRouter, Request, Form, Depends, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
-from fastapi.templating import Jinja2Templates
+from backend.utils import templates
 from sqlalchemy.orm import Session
 import os, shutil, uuid, io
-
 import qrcode
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.utils import ImageReader
-
 from backend.database import SessionLocal, get_db
 from backend.models import Usuario, Formulario, ValorModelo, Ficha
 from backend.security import admin_required
@@ -19,7 +17,7 @@ from backend.security import admin_required
 # ======================================================
 
 router = APIRouter()
-templates = Jinja2Templates(directory="backend/frontend/templates")
+
 
 UPLOAD_DIR = "frontend/static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)

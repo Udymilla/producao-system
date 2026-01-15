@@ -1,0 +1,12 @@
+#pip install -r requirements.txt
+fastapi
+uvicorn
+sqlalchemy
+psycopg[binary]
+jinja2
+python-multipart
+itsdangerous
+qrcode[pil]
+reportlab
+passlib[bcrypt]
+

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
-
+from backend.utils import templates
 from backend.database import SessionLocal
 from backend.models import Usuario, UsuarioOperacional
 
@@ -10,7 +9,7 @@ from backend.models import Usuario, UsuarioOperacional
 # ======================================================
 
 router = APIRouter()
-templates = Jinja2Templates(directory="backend/frontend/templates")
+
 
 # ======================================================
 # LOGIN ADMIN / USUÁRIO PADRÃO
