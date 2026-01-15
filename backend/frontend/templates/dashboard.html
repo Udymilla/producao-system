@@ -5,116 +5,149 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Produção Dadalto</title>
 
-    <!-- Estilo básico com Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Ícones -->
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.3.0/fonts/remixicon.css" rel="stylesheet">
     <link href="/static/css/output.css" rel="stylesheet">
 
     <style>
-        body {
-            background-color: #f8fafc;
-        }
+        body { background-color: #f8fafc; }
         .card {
             background-color: #ffffff;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1),
+                        0 2px 4px -2px rgba(0,0,0,0.1);
             border-radius: 1rem;
             padding: 1.5rem;
             transition: box-shadow 0.2s ease;
         }
         .card:hover {
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1),
+                        0 4px 6px -4px rgba(0,0,0,0.1);
         }
         .btn {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background-color: #2563eb; /* blue-600 */
+            background-color: #2563eb;
             color: #ffffff;
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
             transition: background-color 0.15s ease;
             text-decoration: none;
         }
-        .btn:hover {
-            background-color: #1e40af; /* blue-700 */
-        }
-        .btn i {
-            font-size: 18px;
-        }
+        .btn:hover { background-color: #1e40af; }
+        .btn i { font-size: 18px; }
     </style>
 </head>
+
 <body class="min-h-screen flex flex-col">
 
-    <!-- Barra superior -->
-    <header class="bg-blue-800 text-white py-4 shadow-md">
-        <div class="container mx-auto flex justify-between items-center px-6">
-            <h1 class="text-2xl font-bold tracking-wide">Sistema de Produção Dadalto</h1>
+<header class="bg-blue-800 text-white py-4 shadow-md">
+    <div class="container mx-auto flex justify-between items-center px-6">
+        <h1 class="text-2xl font-bold tracking-wide">
+            Sistema de Produção Dadalto
+        </h1>
 
-            <div class="flex items-center gap-4">
-                <span class="text-sm opacity-90">
-                    👋<b>{{ usuario }}</b>  
-                    <span class="text-gray-200">({{ perfil }})</span>
+        <div class="flex items-center gap-4">
+            <span class="text-sm opacity-90">
+                👋 <b>{{ request.session.usuario }}</b>
+                <span class="text-gray-200">
+                    ({{ request.session.perfil }})
                 </span>
-                <a href="/logout" class="text-sm bg-red-500 px-3 py-1 rounded hover:bg-red-600 transition">Sair</a>
-            </div>
+            </span>
+            <a href="/logout"
+               class="text-sm bg-red-500 px-3 py-1 rounded hover:bg-red-600 transition">
+               Sair
+            </a>
         </div>
-    </header>
+    </div>
+</header>
 
-    <!-- Conteúdo principal -->
-    <main class="flex-1 container mx-auto px-6 py-10">
-        <h2 class="text-2xl font-semibold mb-6 text-gray-700">Bem-vindo {{ usuario }}! 👋 </h2>
+<main class="flex-1 container mx-auto px-6 py-10">
+    <h2 class="text-2xl font-semibold mb-6 text-gray-700">
+        Bem-vindo {{ request.session.usuario }}! 👋
+    </h2>
 
-        <div class="grid md:grid-cols-3 gap-6">
+    <div class="grid md:grid-cols-3 gap-6">
 
-            <div class="card bg-white shadow-md rounded-2xl p-6 hover:shadow-lg transition duration-200">
-                <h3 class="text-lg font-bold text-gray-700 mb-2">📄 Lançar Produção</h3>
-                <p class="text-gray-500 text-sm mb-4">Registre novas fichas de produção.</p>
-                <a href="/lancar" class="btn"><i class="ri-add-circle-line"></i> Nova Produção</a>
-            </div>
-
-           <div class="card bg-white shadow-md rounded-2xl p-6 hover:shadow-lg transition duration-200">
-                 <h3 class="text-lg font-bold text-gray-700 mb-2">📊 Consulta de Produção</h3>
-                 <p class="text-gray-500 text-sm mb-4">Veja relatórios de produtividade por funcionário.</p>
-                 <a href="/consultar_producao" class="btn"><i class="ri-bar-chart-2-line"></i> Consultar</a>
-           </div>
-
-           <div class="card bg-white shadow-md rounded-2xl p-6 hover:shadow-lg transition duration-200">
-                  <h3 class="text-lg font-bold text-gray-700 mb-2">🧾 Consultar Fichas</h3>
-                  <p class="text-gray-500 text-sm mb-4">Visualize e gerencie fichas lançadas.</p>
-                  <a href="/consultar_fichas" class="btn"><i class="ri-file-list-3-line"></i> Consultar</a>
-           </div>
-      
-
-            <div class="card bg-white shadow-md rounded-2xl p-6 hover:shadow-lg transition duration-200">
-                <h3 class="text-lg font-bold text-gray-700 mb-2">📦 Estoque</h3>
-                <p class="text-gray-500 text-sm mb-4">Acompanhe os produtos em cada setor.</p>
-                <a href="#" class="btn"><i class="ri-archive-stack-line"></i> Acessar Estoque</a>
-            </div>
-
-            <div class="card bg-white shadow-md rounded-2xl p-6 hover:shadow-lg transition duration-200">
-                <h3 class="text-lg font-bold text-gray-700 mb-2">👥 Funcionários</h3>
-                <p class="text-gray-500 text-sm mb-4">Consulte dados e desempenho individual.</p>
-                <a href="#" class="btn"><i class="ri-user-settings-line"></i> Ver Funcionários</a>
-            </div>
-
-            {% if perfil == 'admin' %}
-           <div class="card">
-               <h3 class="text-lg font-bold text-gray-700 mb-2">⚙️ Administração</h3>
-                <p class="text-gray-500 text-sm mb-4">Gerencie formulários, usuários e controle de estoque.</p>
-                <a href="/administracao" class="btn"><i class="ri-settings-3-line"></i> Acessar</a>
-           {% endif %}
-
-        
-
+        <div class="card">
+            <h3 class="text-lg font-bold text-gray-700 mb-2">
+                📄 Lançar Produção
+            </h3>
+            <p class="text-gray-500 text-sm mb-4">
+                Registre novas fichas de produção.
+            </p>
+            <a href="/lancar" class="btn">
+                <i class="ri-add-circle-line"></i> Nova Produção
+            </a>
         </div>
-    </main>
 
-    <!-- Rodapé -->
-    <footer class="bg-gray-100 py-4 text-center text-sm text-gray-500 border-t">
-        © {{ now().year }} Dadalto Couro · Sistema de Produção Interno
-    </footer>
+        <div class="card">
+            <h3 class="text-lg font-bold text-gray-700 mb-2">
+                📊 Consulta de Produção
+            </h3>
+            <p class="text-gray-500 text-sm mb-4">
+                Veja relatórios de produtividade por funcionário.
+            </p>
+            <a href="/consultar_producao" class="btn">
+                <i class="ri-bar-chart-2-line"></i> Consultar
+            </a>
+        </div>
+
+        <div class="card">
+            <h3 class="text-lg font-bold text-gray-700 mb-2">
+                🧾 Consultar Fichas
+            </h3>
+            <p class="text-gray-500 text-sm mb-4">
+                Visualize e gerencie fichas lançadas.
+            </p>
+            <a href="/consultar_fichas" class="btn">
+                <i class="ri-file-list-3-line"></i> Consultar
+            </a>
+        </div>
+
+        <div class="card">
+            <h3 class="text-lg font-bold text-gray-700 mb-2">📦 Estoque</h3>
+            <p class="text-gray-500 text-sm mb-4">
+                Acompanhe os produtos em cada setor.
+            </p>
+            <a href="#" class="btn">
+                <i class="ri-archive-stack-line"></i> Acessar Estoque
+            </a>
+        </div>
+
+        <div class="card">
+            <h3 class="text-lg font-bold text-gray-700 mb-2">
+                👥 Funcionários
+            </h3>
+            <p class="text-gray-500 text-sm mb-4">
+                Consulte dados e desempenho individual.
+            </p>
+            <a href="#" class="btn">
+                <i class="ri-user-settings-line"></i> Ver Funcionários
+            </a>
+        </div>
+
+        {% if request.session.perfil == 'admin' %}
+        <div class="card">
+            <h3 class="text-lg font-bold text-gray-700 mb-2">
+                ⚙️ Administração
+            </h3>
+            <p class="text-gray-500 text-sm mb-4">
+                Gerencie formulários, usuários e controle de estoque.
+            </p>
+            <a href="/administracao" class="btn">
+                <i class="ri-settings-3-line"></i> Acessar
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</main>
+
+<footer class="bg-gray-100 py-4 text-center text-sm text-gray-500 border-t">
+    © {{ now().year }} Dadalto Couro · Sistema de Produção Interno
+</footer>
 
 </body>
 </html>

@@ -15,6 +15,7 @@ import base64
 from datetime import datetime
 from fastapi import File, UploadFile
 import shutil, os
+from backend.security import require_login, require_admin
 
 
 # Cria as tabelas se ainda não existirem
@@ -331,15 +332,14 @@ async def pagina_admin(request: Request):
 # ===== Página de Lançamento (GET) =====
 
 @app.get("/lancar", response_class=HTMLResponse)
-async def lancar_page(request: Request, db: Session = Depends(get_db)):
-    # Buscar todos os operadores e modelos ativos
-    operadores = db.query(UsuarioOperacional).filter(UsuarioOperacional.ativo == 1).all()
-    modelos = db.query(Formulario).filter(Formulario.ativo == True).all()
-    
+async def lancar_page(request: Request):
+    require_login(request)
+
     return templates.TemplateResponse(
         "lancar.html",
-        {"request": request, "operadores": operadores, "modelos": modelos}
+        {"request": request}
     )
+
 
 
 # ===== Receber envio do formulário (POST) =====
@@ -380,22 +380,34 @@ async def lancar_post(request: Request):
     })
 
 @app.get("/consultar_fichas", response_class=HTMLResponse)
-async def consultar_fichas(request: Request):
-    perfil = request.session.get("perfil", "")
-    return templates.TemplateResponse("consultar_fichas.html", {"request": request, "perfil": perfil})
+async def consultar_fichas_page(request: Request):
+    require_login(request)
+
+    return templates.TemplateResponse(
+        "consultar_fichas.html",
+        {"request": request}
+    )
 
 # Página de consulta de produção por funcionário
 @app.get("/consultar_producao", response_class=HTMLResponse)
-async def consultar_producao(request: Request):
-    return templates.TemplateResponse("consultar_producao.html", {"request": request})
-    
+async def consultar_producao_page(request: Request):
+    require_login(request)
 
-@app.get("/cadastro_for      mulario", response_class=HTMLResponse)
-async def cadastro_formulario_page(request: Request, db: Session = Depends(get_db)):
-    modelos = db.query(Formulario).order_by(Formulario.nome_modelo.asc()).all()
+    return templates.TemplateResponse(
+        "consultar_producao.html",
+        {"request": request}
+    )
+
+
+from backend.security import require_admin
+
+@app.get("/cadastro_formulario", response_class=HTMLResponse)
+async def cadastro_formulario_page(request: Request):
+    require_admin(request)
+
     return templates.TemplateResponse(
         "cadastro_formulario.html",
-        {"request": request, "modelos": modelos}
+        {"request": request}
     )
 
 @app.post("/cadastro_formulario", response_class=HTMLResponse)
@@ -435,13 +447,22 @@ async def cadastro_formulario_post(request: Request,
 # ===== Página de Administração =====
 @app.get("/administracao", response_class=HTMLResponse)
 async def administracao_page(request: Request):
-    return templates.TemplateResponse("administracao.html", {"request": request})
+    require_admin(request)
 
+    return templates.TemplateResponse(
+        "administracao.html",
+        {"request": request}
+    )
 # ===== Cadastrar novos usuários operacionais =====
 
 @app.get("/cadastrar_usuario", response_class=HTMLResponse)
 async def cadastrar_usuario_page(request: Request):
-    return templates.TemplateResponse("cadastrar_usuario.html", {"request": request})
+    require_admin(request)
+
+    return templates.TemplateResponse(
+        "cadastrar_usuario.html",
+        {"request": request}
+    )
 
 
 @app.post("/cadastrar_usuario", response_class=HTMLResponse)
@@ -708,10 +729,12 @@ async def gerar_fichas(request: Request, modelo: str = Form(...), qtd_fichas: in
 
 @app.get("/gerar_fichas", response_class=HTMLResponse)
 async def gerar_fichas_page(request: Request):
-    db = SessionLocal()
-    modelos = db.query(Formulario).filter(Formulario.ativo == True).all()
-    db.close()
-    return templates.TemplateResponse("gerar_fichas.html", {"request": request, "modelos": modelos})
+    require_admin(request)
+
+    return templates.TemplateResponse(
+        "gerar_fichas.html",
+        {"request": request}
+    )
 
 # ==========================================================
 # FORMULÁRIO DO QR (responder ficha)
