@@ -203,10 +203,18 @@ async def responder_ficha(
     if not ficha:
         raise HTTPException(status_code=404, detail="Ficha não encontrada")
 
-    # 🔹 Busca o modelo oficial pelo nome salvo na ficha
+    # 🔒 ACESSO SEGURO AO MODELO (evita AttributeError)
+    modelo_nome = getattr(ficha, "modelo", None)
+
+    if not modelo_nome:
+        raise HTTPException(
+            status_code=500,
+            detail="Ficha sem modelo vinculado (estrutura antiga)"
+        )
+
     formulario = (
         db.query(Formulario)
-        .filter(Formulario.nome_modelo == ficha.modelo)
+        .filter(Formulario.nome_modelo == modelo_nome)
         .first()
     )
 
@@ -228,6 +236,7 @@ async def responder_ficha(
             "funcoes": [f[0] for f in funcoes]
         }
     )
+
 @router.post("/responder_ficha")
 async def responder_ficha_post(
     ficha_id: int = Form(...),
