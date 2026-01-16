@@ -26,10 +26,11 @@
 
     <div class="mb-4">
       <label for="modelo" class="block text-sm font-medium mb-1 text-gray-700">Modelo:</label>
-<select name="modelo" id="modelo" class="w-full border rounded-md px-2 py-1 shadow-sm focus:ring-blue-500 focus:border-blue-500">
-  <option value="">Selecione um modelo</option>
-  {% for modelo in modelos %}
-    <option value="{{ modelo.nome_modelo }}">{{ modelo.nome_modelo }}</option>
+<select name="modelo" required
+        class="w-full border rounded px-3 py-2">
+  <option value="">Selecione o modelo</option>
+  {% for m in modelos %}
+    <option value="{{ m.nome_modelo }}">{{ m.nome_modelo }}</option>
   {% endfor %}
 </select>
 

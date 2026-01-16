@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Request, Form, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Request, Form, Depends, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse
 from backend.utils import templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -13,6 +13,7 @@ from backend.models import (
 )
 from backend.security import login_required
 from typing import Optional
+from datetime import datetime
 
 # ======================================================
 # CONFIG
@@ -35,44 +36,56 @@ async def dashboard(request: Request):
 # ======================================================
 # LANÇAR PRODUÇÃO (HTML)
 # ======================================================
-
 @router.get("/lancar", response_class=HTMLResponse)
 @login_required
-async def lancar_page(request: Request):
+async def lancar_page(request: Request, db: Session = Depends(get_db)):
+
+    modelos = (
+        db.query(Formulario)
+        .filter(Formulario.ativo == True)
+        .order_by(Formulario.nome_modelo.asc())
+        .all()
+    )
+
     return templates.TemplateResponse(
         "lancar.html",
-        {"request": request}
+        {
+            "request": request,
+            "modelos": modelos
+        }
     )
 
 
 @router.post("/lancar", response_class=HTMLResponse)
 @login_required
-async def lancar_post(request: Request):
+async def lancar_post(
+    request: Request,
+    db: Session = Depends(get_db)
+):
     form = await request.form()
 
     operador = form.get("operador")
-    modelo = form.get("modelo")
+    modelo = form.get("modelo")  # VEM DO SELECT
     funcao = form.get("funcao")
     quantidade = int(form.get("quantidade"))
-    qtd_fichas = int(form.get("qtd_fichas"))
-    numero_inicial = int(form.get("numero_inicial"))
 
-    fichas = [str(numero_inicial + i) for i in range(qtd_fichas)]
-
-    mensagem = (
-        f"<b>Operador:</b> {operador}<br>"
-        f"<b>Modelo:</b> {modelo}<br>"
-        f"<b>Função:</b> {funcao}<br>"
-        f"<b>Qtd por ficha:</b> {quantidade}<br>"
-        f"<b>Fichas geradas:</b> {', '.join(fichas)}"
+    nova = Producao(
+        operador=operador,
+        modelo=modelo,
+        servico=funcao,
+        quantidade=quantidade,
+        valor=0.0,
     )
+
+    db.add(nova)
+    db.commit()
 
     return templates.TemplateResponse(
         "pagina.html",
         {
             "request": request,
-            "titulo": "Lançamento Concluído ✅",
-            "mensagem": mensagem
+            "titulo": "Produção lançada ✅",
+            "mensagem": f"{quantidade} peças do modelo {modelo} lançadas para {operador}"
         }
     )
 
@@ -94,23 +107,21 @@ async def consultar_fichas_page(request: Request):
 
 @router.get("/consultar_producao", response_class=HTMLResponse)
 @login_required
-async def consultar_producao_page(request: Request):
-    db = SessionLocal()
+async def consultar_producao_page(request: Request, db: Session = Depends(get_db)):
 
     operadores = (
-        db.query(Producao.operador)
+        db.query(UsuarioOperacional.nome)
         .distinct()
-        .order_by(Producao.operador.asc())
-        .all()
-    )
-    modelos = (
-        db.query(Producao.modelo)
-        .distinct()
-        .order_by(Producao.modelo.asc())
+        .order_by(UsuarioOperacional.nome.asc())
         .all()
     )
 
-    db.close()
+    modelos = (
+        db.query(Formulario.nome_modelo)
+        .filter(Formulario.ativo == True)
+        .order_by(Formulario.nome_modelo.asc())
+        .all()
+    )
 
     return templates.TemplateResponse(
         "consultar_producao.html",
@@ -120,6 +131,7 @@ async def consultar_producao_page(request: Request):
             "modelos": [m[0] for m in modelos],
         }
     )
+
 
 # ======================================================
 # CONSULTAR PRODUÇÃO (DADOS AJAX)
@@ -139,22 +151,28 @@ def consultar_producao_dados(
             func.sum(Producao.valor).label("valor_total"),
             func.array_agg(Producao.ficha_id).label("fichas")
         )
-        .join(UsuarioOperacional, UsuarioOperacional.id == Producao.usuario_id)
+        .join(
+            UsuarioOperacional,
+            UsuarioOperacional.id == Producao.usuario_id
+        )
     )
 
-    # 🔍 Filtro por operador (case-insensitive)
+    # 🔍 Filtro por operador
     if operador:
         query = query.filter(
             UsuarioOperacional.nome.ilike(f"%{operador}%")
         )
 
-    # 📅 Data inicial
+    # 📅 Data inicial (convertendo string → datetime)
     if data_inicial:
-        query = query.filter(Producao.criado_em >= data_inicial)
+        data_ini = datetime.strptime(data_inicial, "%Y-%m-%d")
+        query = query.filter(Producao.criado_em >= data_ini)
 
-    # 📅 Data final
+    # 📅 Data final (fim do dia)
     if data_final:
-        query = query.filter(Producao.criado_em <= data_final)
+        data_fim = datetime.strptime(data_final, "%Y-%m-%d")
+        data_fim = data_fim.replace(hour=23, minute=59, second=59)
+        query = query.filter(Producao.criado_em <= data_fim)
 
     query = query.group_by(Producao.modelo)
 
@@ -169,3 +187,74 @@ def consultar_producao_dados(
         "valores": [float(r.valor_total or 0) for r in resultados],
         "fichas": [r.fichas[0] if r.fichas else "-" for r in resultados]
     }
+
+@router.get("/responder_ficha", response_class=HTMLResponse)
+async def responder_ficha(
+    request: Request,
+    token: str,
+    db: Session = Depends(get_db)
+):
+    ficha = (
+        db.query(Ficha)
+        .filter(Ficha.token_qr == token)
+        .first()
+    )
+
+    if not ficha:
+        raise HTTPException(status_code=404, detail="Ficha não encontrada")
+
+    # 🔹 Busca o modelo oficial pelo nome salvo na ficha
+    formulario = (
+        db.query(Formulario)
+        .filter(Formulario.nome_modelo == ficha.modelo)
+        .first()
+    )
+
+    funcoes = []
+    if formulario:
+        funcoes = (
+            db.query(ValorModelo.funcao)
+            .filter(ValorModelo.modelo_id == formulario.id)
+            .distinct()
+            .order_by(ValorModelo.funcao.asc())
+            .all()
+        )
+
+    return templates.TemplateResponse(
+        "responder_ficha.html",
+        {
+            "request": request,
+            "ficha": ficha,
+            "funcoes": [f[0] for f in funcoes]
+        }
+    )
+@router.post("/responder_ficha")
+async def responder_ficha_post(
+    ficha_id: int = Form(...),
+    operador: str = Form(...),
+    quantidade: int = Form(...),
+    db: Session = Depends(get_db)
+):
+    ficha = db.query(Ficha).filter(Ficha.id == ficha_id).first()
+
+    if not ficha:
+        raise HTTPException(status_code=404, detail="Ficha não encontrada")
+
+    producao = Producao(
+        ficha_id=ficha.id,
+        operador=operador,
+        modelo=ficha.modelo,
+        servico=ficha.funcao,
+        quantidade=quantidade,
+        valor=0,  # depois podemos calcular automático
+        criado_em=datetime.utcnow()
+    )
+
+    db.add(producao)
+    db.commit()
+
+    return RedirectResponse(
+        url="/dashboard",
+        status_code=303
+    )
+

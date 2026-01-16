@@ -7,32 +7,54 @@
 <div class="flex justify-center mt-10">
   <form action="/gerar_fichas" method="post"
         class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+
     <h2 class="text-2xl font-semibold text-gray-700 text-center mb-6">
       Gerar Fichas de Produção
     </h2>
 
+    <!-- MODELO -->
     <div class="mb-4">
-      <label for="modelo" class="block text-gray-700 font-medium mb-1">Modelo:</label>
-      <select name="modelo" id="modelo" required
-              class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+      <label for="formulario_id" class="block text-gray-700 font-medium mb-1">
+        Modelo:
+      </label>
+
+      <select name="formulario_id" id="formulario_id" required
+              class="w-full border-gray-300 rounded-lg shadow-sm
+                     focus:ring-blue-500 focus:border-blue-500">
+
+        <option value="">Selecione um modelo</option>
+
         {% for m in modelos %}
-          <option value="{{ m.nome_modelo }}">{{ m.nome_modelo }}</option>
+          <option value="{{ m.id }}">
+            {{ m.nome_modelo }}
+          </option>
         {% endfor %}
       </select>
     </div>
 
+    <!-- QUANTIDADE -->
     <div class="mb-6">
       <label for="qtd_fichas" class="block text-gray-700 font-medium mb-1">
         Quantidade de Fichas:
       </label>
-      <input type="number" name="qtd_fichas" id="qtd_fichas" min="1" value="5" required
-             class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+
+      <input type="number"
+             name="qtd_fichas"
+             id="qtd_fichas"
+             min="1"
+             value="5"
+             required
+             class="w-full border-gray-300 rounded-lg shadow-sm
+                    focus:ring-blue-500 focus:border-blue-500">
     </div>
 
+    <!-- BOTÃO -->
     <button type="submit"
-            class="w-full bg-blue-700 text-white py-2 rounded-lg font-semibold hover:bg-blue-800 transition">
+            class="w-full bg-blue-700 text-white py-2 rounded-lg
+                   font-semibold hover:bg-blue-800 transition">
       📄 Gerar Fichas
     </button>
+
   </form>
 </div>
 {% endblock %}

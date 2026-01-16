@@ -1,9 +1,18 @@
 from datetime import datetime
 import enum
+
 from sqlalchemy import (
-    Column, Integer, String, Float, DateTime, ForeignKey, Boolean, Enum, Text, UniqueConstraint
+    Column,
+    Integer,
+    String,
+    Float,
+    DateTime,
+    ForeignKey,
+    Boolean,
+    Enum,
+    UniqueConstraint,
 )
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.orm import relationship
 
 # ✅ Garante que o Base é o mesmo em todo o projeto
 from backend.database import Base
@@ -22,7 +31,7 @@ class StatusFicha(str, enum.Enum):
 # 🔹 USUÁRIOS DO SISTEMA (admin / líderes)
 # ==========================================================
 class UsuarioSistema(Base):
-    __tablename__ = "usuarios_sistema"  # ✅ Nome da tabela definido
+    __tablename__ = "usuarios_sistema"
 
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String(100), nullable=False)
@@ -64,6 +73,10 @@ class Formulario(Base):
     url_imagem = Column(String, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
 
+    # 🔗 RELACIONAMENTOS
+    fichas = relationship("Ficha", back_populates="formulario")
+    valores = relationship("ValorModelo", back_populates="modelo_ref")
+
 
 # ==========================================================
 # 🔹 FICHAS
@@ -73,7 +86,11 @@ class Ficha(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     numero_ficha = Column(String, unique=True, index=True)
-    modelo = Column(String, nullable=False)  # nome do modelo (ex: CAMISA OPERACIONAL)
+
+    # ✅ AGORA A FICHA APONTA PARA UM MODELO CADASTRADO (Formulario)
+    formulario_id = Column(Integer, ForeignKey("formularios.id"), nullable=False)
+    formulario = relationship("Formulario", back_populates="fichas")
+
     funcao = Column(String, nullable=False)
     quantidade_total = Column(Integer, nullable=False)
     setor_atual = Column(String, nullable=True)
@@ -82,7 +99,7 @@ class Ficha(Base):
     criado_em = Column(DateTime, default=datetime.utcnow)
 
     # 🔗 RELACIONAMENTO COM USUÁRIO OPERACIONAL
-    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"))
+    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"), nullable=True)
     usuario = relationship("UsuarioOperacional", back_populates="fichas")
 
     # 🔗 RELACIONAMENTO COM PRODUÇÃO
@@ -96,19 +113,25 @@ class Producao(Base):
     __tablename__ = "producao"
 
     id = Column(Integer, primary_key=True, index=True)
-    ficha_id = Column(Integer, ForeignKey("fichas.id"), nullable=False)
-    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"))
-    operador = Column(String)
-    modelo = Column(String)
-    servico = Column(String)
-    tamanho = Column(String)
-    quantidade = Column(Integer)
-    valor = Column(Float)
-    criado_em = Column(DateTime, default=datetime.utcnow)
 
-    # 🔗 RELACIONAMENTOS
+    # ✅ produção sempre aponta para uma ficha
+    ficha_id = Column(Integer, ForeignKey("fichas.id"), nullable=False)
     ficha = relationship("Ficha", back_populates="producoes")
+
+    # ✅ opcional: usuário operacional que lançou (se tiver login/pin)
+    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"), nullable=True)
     usuario = relationship("UsuarioOperacional", back_populates="producoes")
+
+    # ✅ opcional: manter o nome do operador como texto (histórico)
+    operador = Column(String, nullable=True)
+
+    # ✅ campos do lançamento
+    servico = Column(String, nullable=True)
+    tamanho = Column(String, nullable=True)
+    quantidade = Column(Integer, nullable=False, default=0)
+    valor = Column(Float, nullable=False, default=0.0)
+
+    criado_em = Column(DateTime, default=datetime.utcnow)
 
 
 # ==========================================================
@@ -120,24 +143,29 @@ class Usuario(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     senha = Column(String, nullable=False)
-    perfil = Column(String, nullable=False)  # Ex: 'administrador', 'lider', 'producao'
+    perfil = Column(String, nullable=False)  # Ex: 'admin', 'operador'
+
 
 # ==========================================================
 # 🔹 VALORES POR MODELO
 # ==========================================================
 class ValorModelo(Base):
-    __tablename__ = "valores_modelos"  # <== ESSA LINHA É OBRIGATÓRIA
+    __tablename__ = "valores_modelos"
 
     id = Column(Integer, primary_key=True, index=True)
     modelo_id = Column(Integer, ForeignKey("formularios.id"), nullable=False)
+
     funcao = Column(String, nullable=False)
     valor_unitario = Column(Float, nullable=False)
     tamanho = Column(String, nullable=True)
+
     url_imagem = Column(String, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
     atualizado_em = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     __table_args__ = (
-        UniqueConstraint("modelo_id", "funcao", "tamanho", name="uq_modelo_funcao_tamanho"),)
-    
-    modelo_ref = relationship("Formulario")
+        UniqueConstraint("modelo_id", "funcao", "tamanho", name="uq_modelo_funcao_tamanho"),
+    )
+
+    # 🔗 relacionamento com Formulario
+    modelo_ref = relationship("Formulario", back_populates="valores")

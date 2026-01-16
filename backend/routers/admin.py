@@ -8,6 +8,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.utils import ImageReader
+
 from backend.database import SessionLocal, get_db
 from backend.models import Usuario, Formulario, ValorModelo, Ficha
 from backend.security import admin_required
@@ -18,8 +19,8 @@ from backend.security import admin_required
 
 router = APIRouter()
 
-
-UPLOAD_DIR = "frontend/static/uploads"
+# ✅ caminho correto no seu projeto (você usa templates em backend/frontend/templates)
+UPLOAD_DIR = "backend/frontend/static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # ======================================================
@@ -166,6 +167,7 @@ async def criar_formulario(
         with open(save_path, "wb") as buffer:
             shutil.copyfileobj(url_imagem.file, buffer)
 
+        # ✅ a URL pública continua sendo /static/uploads/...
         image_path = f"/static/uploads/{filename}"
 
     novo = Formulario(
@@ -211,76 +213,110 @@ async def add_valor(request: Request, db: Session = Depends(get_db)):
     )
 
 # ======================================================
-# GERAR FICHAS (PDF + QR)
+# GERAR FICHAS (HTML)
 # ======================================================
 
 @router.get("/gerar_fichas", response_class=HTMLResponse)
 @admin_required
-async def gerar_fichas_page(request: Request):
-    return templates.TemplateResponse(
-        "gerar_fichas.html",
-        {"request": request}
+async def gerar_fichas_page(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    # ✅ AQUI É A CORREÇÃO PRINCIPAL:
+    # carrega os modelos reais (Formulario) para preencher o select
+    modelos = (
+        db.query(Formulario)
+        .filter(Formulario.ativo == True)
+        .order_by(Formulario.nome_modelo.asc())
+        .all()
     )
 
+    return templates.TemplateResponse(
+        "gerar_fichas.html",
+        {
+            "request": request,
+            "modelos": modelos
+        }
+    )
+
+# ======================================================
+# GERAR FICHAS (PDF + QR)
+# ======================================================
 
 @router.post("/gerar_fichas")
 @admin_required
 async def gerar_fichas(
     request: Request,
-    modelo: str = Form(...),
-    qtd_fichas: int = Form(...)
+    formulario_id: int = Form(...),
+    qtd_fichas: int = Form(...),
+    db: Session = Depends(get_db)
 ):
-    db = SessionLocal()
-
-    try:
-        ultima = db.query(Ficha).order_by(Ficha.id.desc()).first()
-        proximo_numero = 8000 if not ultima else int(ultima.numero_ficha) + 1
-
-        quantidade = 50 if "LUVA" in modelo.upper() else 20
-        fichas = []
-
-        for i in range(qtd_fichas):
-            token_qr = str(uuid.uuid4())
-            ficha = Ficha(
-                numero_ficha=str(proximo_numero + i),
-                modelo=modelo,
-                funcao="GERAL",
-                quantidade_total=quantidade,
-                setor_atual="CORTE",
-                token_qr=token_qr
-            )
-            db.add(ficha)
-            fichas.append(ficha)
-
-        db.commit()
-
-        pdf_path = "fichas_geradas.pdf"
-        c = canvas.Canvas(pdf_path, pagesize=A4)
-
-        for ficha in fichas:
-            qr_url = f"http://127.0.0.1:8000/responder_ficha?token={ficha.token_qr}"
-            qr_img = qrcode.make(qr_url)
-            buffer = io.BytesIO()
-            qr_img.save(buffer, format="PNG")
-            buffer.seek(0)
-            qr_image = ImageReader(buffer)
-
-            c.setFont("Helvetica-Bold", 24)
-            c.drawCentredString(10.5 * cm, 27 * cm, f"FICHA Nº {ficha.numero_ficha}")
-            c.setFont("Helvetica", 18)
-            c.drawCentredString(10.5 * cm, 25 * cm, f"MODELO: {ficha.modelo}")
-            c.setFont("Helvetica", 16)
-            c.drawCentredString(10.5 * cm, 23.5 * cm, f"QUANTIDADE: {ficha.quantidade_total} PEÇAS")
-
-            c.drawImage(qr_image, 6.5 * cm, 13 * cm, width=8 * cm, height=8 * cm)
-            c.showPage()
-
-        c.save()
-        return FileResponse(
-            pdf_path,
-            filename="fichas_geradas.pdf",
-            media_type="application/pdf"
+    # ✅ pega o modelo oficial pelo ID
+    formulario = db.query(Formulario).filter(Formulario.id == formulario_id).first()
+    if not formulario:
+        return templates.TemplateResponse(
+            "gerar_fichas.html",
+            {
+                "request": request,
+                "modelos": db.query(Formulario).filter(Formulario.ativo == True).all(),
+                "mensagem": "⚠️ Modelo não encontrado."
+            }
         )
 
-    finally:
-        db.close()
+    # ✅ pega último número de ficha para sequenciar
+    ultima = db.query(Ficha).order_by(Ficha.id.desc()).first()
+    proximo_numero = 8000 if not ultima else int(ultima.numero_ficha) + 1
+
+    # regra antiga mantida
+    quantidade = 50 if "LUVA" in formulario.nome_modelo.upper() else 20
+
+    fichas = []
+    for i in range(qtd_fichas):
+        token_qr = str(uuid.uuid4())
+        ficha = Ficha(
+            numero_ficha=str(proximo_numero + i),
+            formulario_id=formulario.id,  # ✅ agora é por ID do Formulario
+            funcao="GERAL",
+            quantidade_total=quantidade,
+            setor_atual="CORTE",
+            token_qr=token_qr
+        )
+        db.add(ficha)
+        fichas.append(ficha)
+
+    db.commit()
+
+    # 🔽 garante que as relationships estejam disponíveis no loop do PDF
+    for f in fichas:
+        db.refresh(f)
+
+    pdf_path = "fichas_geradas.pdf"
+    c = canvas.Canvas(pdf_path, pagesize=A4)
+
+    for ficha in fichas:
+        qr_url = f"http://127.0.0.1:8000/responder_ficha?token={ficha.token_qr}"
+        qr_img = qrcode.make(qr_url)
+        buffer = io.BytesIO()
+        qr_img.save(buffer, format="PNG")
+        buffer.seek(0)
+        qr_image = ImageReader(buffer)
+
+        c.setFont("Helvetica-Bold", 24)
+        c.drawCentredString(10.5 * cm, 27 * cm, f"FICHA Nº {ficha.numero_ficha}")
+
+        c.setFont("Helvetica", 18)
+        c.drawCentredString(10.5 * cm, 25 * cm, f"MODELO: {ficha.formulario.nome_modelo}")
+
+        c.setFont("Helvetica", 16)
+        c.drawCentredString(10.5 * cm, 23.5 * cm, f"QUANTIDADE: {ficha.quantidade_total} PEÇAS")
+
+        c.drawImage(qr_image, 6.5 * cm, 13 * cm, width=8 * cm, height=8 * cm)
+        c.showPage()
+
+    c.save()
+
+    return FileResponse(
+        pdf_path,
+        filename="fichas_geradas.pdf",
+        media_type="application/pdf"
+    )
