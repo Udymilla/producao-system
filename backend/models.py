@@ -87,14 +87,16 @@ class Ficha(Base):
     id = Column(Integer, primary_key=True, index=True)
     numero_ficha = Column(String, unique=True, index=True)
 
-    # 🔗 MODELO CORRETO
-    modelo_id = Column(Integer, ForeignKey("formularios.id"), nullable=False)
-    modelo_ref = relationship("Formulario")
+    # 🔴 REMOVE o campo modelo antigo (string)
+    # modelo = Column(String, nullable=False)
+
+    # ✅ RELAÇÃO CORRETA COM FORMULÁRIO
+    formulario_id = Column(Integer, ForeignKey("formularios.id"), nullable=False)
+    formulario = relationship("Formulario")
 
     funcao = Column(String, nullable=False)
     quantidade_total = Column(Integer, nullable=False)
     setor_atual = Column(String, nullable=True)
-
     status = Column(Enum(StatusFicha), default=StatusFicha.EM_PRODUCAO)
     token_qr = Column(String(64), unique=True, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
@@ -103,8 +105,6 @@ class Ficha(Base):
     usuario = relationship("UsuarioOperacional", back_populates="fichas")
 
     producoes = relationship("Producao", back_populates="ficha")
-
-
 
 # ==========================================================
 # 🔹 PRODUÇÃO (Lançamentos feitos pelo sistema ou QR)
