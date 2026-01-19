@@ -146,35 +146,32 @@ def consultar_producao_dados(
 ):
     query = (
         db.query(
-            Producao.modelo.label("modelo"),
+            Formulario.nome_modelo.label("modelo"),
             func.sum(Producao.quantidade).label("total_pecas"),
             func.sum(Producao.valor).label("valor_total"),
-            func.array_agg(Producao.ficha_id).label("fichas")
+            func.array_agg(Ficha.numero_ficha).label("fichas")
         )
-        .join(
-            UsuarioOperacional,
-            UsuarioOperacional.id == Producao.usuario_id
-        )
+        .join(Ficha, Ficha.id == Producao.ficha_id)
+        .join(Formulario, Formulario.id == Ficha.modelo_id)
+        .join(UsuarioOperacional, UsuarioOperacional.id == Producao.usuario_id)
     )
 
-    # 🔍 Filtro por operador
     if operador:
         query = query.filter(
             UsuarioOperacional.nome.ilike(f"%{operador}%")
         )
 
-    # 📅 Data inicial (convertendo string → datetime)
     if data_inicial:
-        data_ini = datetime.strptime(data_inicial, "%Y-%m-%d")
-        query = query.filter(Producao.criado_em >= data_ini)
+        query = query.filter(
+            Producao.criado_em >= datetime.fromisoformat(data_inicial)
+        )
 
-    # 📅 Data final (fim do dia)
     if data_final:
-        data_fim = datetime.strptime(data_final, "%Y-%m-%d")
-        data_fim = data_fim.replace(hour=23, minute=59, second=59)
-        query = query.filter(Producao.criado_em <= data_fim)
+        query = query.filter(
+            Producao.criado_em <= datetime.fromisoformat(data_final)
+        )
 
-    query = query.group_by(Producao.modelo)
+    query = query.group_by(Formulario.nome_modelo)
 
     resultados = query.all()
 

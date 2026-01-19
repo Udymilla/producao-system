@@ -251,8 +251,13 @@ async def gerar_fichas(
     qtd_fichas: int = Form(...),
     db: Session = Depends(get_db)
 ):
-    # ✅ pega o modelo oficial pelo ID
-    formulario = db.query(Formulario).filter(Formulario.id == formulario_id).first()
+    # 🔎 Busca modelo oficial
+    formulario = (
+        db.query(Formulario)
+        .filter(Formulario.id == formulario_id, Formulario.ativo == True)
+        .first()
+    )
+
     if not formulario:
         return templates.TemplateResponse(
             "gerar_fichas.html",
@@ -263,52 +268,68 @@ async def gerar_fichas(
             }
         )
 
-    # ✅ pega último número de ficha para sequenciar
+    # 🔢 Sequência de ficha
     ultima = db.query(Ficha).order_by(Ficha.id.desc()).first()
     proximo_numero = 8000 if not ultima else int(ultima.numero_ficha) + 1
 
-    # regra antiga mantida
+    # 📦 Regra de quantidade
     quantidade = 50 if "LUVA" in formulario.nome_modelo.upper() else 20
 
     fichas = []
+
     for i in range(qtd_fichas):
         token_qr = str(uuid.uuid4())
+
         ficha = Ficha(
             numero_ficha=str(proximo_numero + i),
-            formulario_id=formulario.id,  # ✅ agora é por ID do Formulario
+            modelo_id=formulario.id,   # ✅ FK correta
             funcao="GERAL",
             quantidade_total=quantidade,
             setor_atual="CORTE",
             token_qr=token_qr
         )
+
         db.add(ficha)
         fichas.append(ficha)
 
     db.commit()
 
-    # 🔽 garante que as relationships estejam disponíveis no loop do PDF
-    for f in fichas:
-        db.refresh(f)
+    # 🔄 garante acesso ao relacionamento
+    for ficha in fichas:
+        db.refresh(ficha)
 
+    # ======================
+    # 📄 GERA PDF + QR
+    # ======================
     pdf_path = "fichas_geradas.pdf"
     c = canvas.Canvas(pdf_path, pagesize=A4)
 
     for ficha in fichas:
         qr_url = f"http://127.0.0.1:8000/responder_ficha?token={ficha.token_qr}"
         qr_img = qrcode.make(qr_url)
+
         buffer = io.BytesIO()
         qr_img.save(buffer, format="PNG")
         buffer.seek(0)
+
         qr_image = ImageReader(buffer)
 
         c.setFont("Helvetica-Bold", 24)
         c.drawCentredString(10.5 * cm, 27 * cm, f"FICHA Nº {ficha.numero_ficha}")
 
         c.setFont("Helvetica", 18)
-        c.drawCentredString(10.5 * cm, 25 * cm, f"MODELO: {ficha.formulario.nome_modelo}")
+        c.drawCentredString(
+            10.5 * cm,
+            25 * cm,
+            f"MODELO: {ficha.modelo_ref.nome_modelo}"  # ✅ relacionamento correto
+        )
 
         c.setFont("Helvetica", 16)
-        c.drawCentredString(10.5 * cm, 23.5 * cm, f"QUANTIDADE: {ficha.quantidade_total} PEÇAS")
+        c.drawCentredString(
+            10.5 * cm,
+            23.5 * cm,
+            f"QUANTIDADE: {ficha.quantidade_total} PEÇAS"
+        )
 
         c.drawImage(qr_image, 6.5 * cm, 13 * cm, width=8 * cm, height=8 * cm)
         c.showPage()
