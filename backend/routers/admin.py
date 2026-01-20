@@ -222,8 +222,6 @@ async def gerar_fichas_page(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    # ✅ AQUI É A CORREÇÃO PRINCIPAL:
-    # carrega os modelos reais (Formulario) para preencher o select
     modelos = (
         db.query(Formulario)
         .filter(Formulario.ativo == True)
@@ -233,15 +231,9 @@ async def gerar_fichas_page(
 
     return templates.TemplateResponse(
         "gerar_fichas.html",
-        {
-            "request": request,
-            "modelos": modelos
-        }
+        {"request": request, "modelos": modelos}
     )
 
-# ======================================================
-# GERAR FICHAS (PDF + QR)
-# ======================================================
 
 @router.post("/gerar_fichas")
 @admin_required
@@ -251,56 +243,50 @@ async def gerar_fichas(
     qtd_fichas: int = Form(...),
     db: Session = Depends(get_db)
 ):
-    # 🔎 Busca modelo oficial
-    formulario = (
-        db.query(Formulario)
-        .filter(Formulario.id == formulario_id, Formulario.ativo == True)
-        .first()
-    )
-
+    formulario = db.query(Formulario).get(formulario_id)
     if not formulario:
-        return templates.TemplateResponse(
-            "gerar_fichas.html",
-            {
-                "request": request,
-                "modelos": db.query(Formulario).filter(Formulario.ativo == True).all(),
-                "mensagem": "⚠️ Modelo não encontrado."
-            }
-        )
+        raise Exception("Modelo não encontrado")
 
-    # 🔢 Sequência de ficha
     ultima = db.query(Ficha).order_by(Ficha.id.desc()).first()
     proximo_numero = 8000 if not ultima else int(ultima.numero_ficha) + 1
 
-    # 📦 Regra de quantidade
     quantidade = 50 if "LUVA" in formulario.nome_modelo.upper() else 20
-
     fichas = []
 
     for i in range(qtd_fichas):
-        token_qr = str(uuid.uuid4())
-
-        ficha = Ficha(
+       ficha = Ficha(
     numero_ficha=str(proximo_numero + i),
-    formulario_id=formulario.id,  # ✅ NOME CERTO
-    funcao="GERAL",
     quantidade_total=quantidade,
-    setor_atual="CORTE",
-    token_qr=token_qr
-)
-
-        db.add(ficha)
-        fichas.append(ficha)
+    formulario_id=formulario.id,
+    token_qr=str(uuid.uuid4())
+        )
+       
+    db.add(ficha)
+    fichas.append(ficha)
 
     db.commit()
 
-    # 🔄 garante acesso ao relacionamento
+    pdf_path = "fichas_geradas.pdf"
+    c = canvas.Canvas(pdf_path, pagesize=A4)
+
     for ficha in fichas:
-        db.refresh(ficha)
+        c.setFont("Helvetica-Bold", 24)
+        c.drawCentredString(10.5 * cm, 27 * cm, f"FICHA Nº {ficha.numero_ficha}")
+        c.setFont("Helvetica", 18)
+        c.drawCentredString(
+            10.5 * cm, 25 * cm,
+            f"MODELO: {ficha.formulario.nome_modelo}"
+        )
+        c.showPage()
+
+    c.save()
+
+    return FileResponse(pdf_path, media_type="application/pdf")
 
     # ======================
     # 📄 GERA PDF + QR
     # ======================
+    
     pdf_path = "fichas_geradas.pdf"
     c = canvas.Canvas(pdf_path, pagesize=A4)
 

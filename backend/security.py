@@ -1,4 +1,5 @@
 from fastapi import Request, HTTPException, status
+from fastapi.responses import RedirectResponse
 from functools import wraps
 
 # =========================
@@ -6,7 +7,7 @@ from functools import wraps
 # =========================
 
 def _require_login(request: Request):
-    if "usuario" not in request.session:
+    if not request.session.get("usuario_id"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário não autenticado"
@@ -28,24 +29,30 @@ def _require_admin(request: Request):
 def login_required(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
-        request: Request = kwargs.get("request")
-        if not request:
-            raise RuntimeError("Request não encontrado na rota")
+        request: Request = kwargs.get("request") or args[0]
 
-        _require_login(request)
+        if not request.session.get("usuario_id"):
+            # ✅ rota correta
+            return RedirectResponse("/login", status_code=303)
+
         return await func(*args, **kwargs)
-
     return wrapper
 
 
 def admin_required(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
-        request: Request = kwargs.get("request")
-        if not request:
-            raise RuntimeError("Request não encontrado na rota")
+        request: Request = kwargs.get("request") or args[0]
 
-        _require_admin(request)
+        if not request.session.get("usuario_id"):
+            return RedirectResponse("/login", status_code=303)
+
+        if request.session.get("perfil") != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso restrito à administração"
+            )
+
         return await func(*args, **kwargs)
 
     return wrapper

@@ -48,14 +48,11 @@ class UsuarioSistema(Base):
 class UsuarioOperacional(Base):
     __tablename__ = "usuarios_operacionais"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     nome = Column(String, nullable=False)
-    senha = Column(String, nullable=False)
-    funcao = Column(String, nullable=False)
-    ativo = Column(Integer, default=1)
-    tipo = Column(String, default="operador")
+    perfil = Column(String, nullable=False)
 
-    # ✅ SOMENTE ISSO
+    # ✅ relação correta
     producoes = relationship("Producao", back_populates="usuario")
 
 # ==========================================================
@@ -82,20 +79,16 @@ class Formulario(Base):
 class Ficha(Base):
     __tablename__ = "fichas"
 
-    id = Column(Integer, primary_key=True, index=True)
-    numero_ficha = Column(String, unique=True, index=True)
+    id = Column(Integer, primary_key=True)
+    numero_ficha = Column(String, unique=True, nullable=False)
+
+    quantidade_total = Column(Integer, nullable=False)  # ✅ OBRIGATÓRIO
 
     formulario_id = Column(Integer, ForeignKey("formularios.id"), nullable=False)
+
+    token_qr = Column(String, unique=True, nullable=False)
+
     formulario = relationship("Formulario")
-
-    funcao = Column(String, nullable=False)
-    quantidade_total = Column(Integer, nullable=False)
-    setor_atual = Column(String)
-    status = Column(Enum(StatusFicha), default=StatusFicha.EM_PRODUCAO)
-    token_qr = Column(String(64), unique=True)
-    criado_em = Column(DateTime, default=datetime.utcnow)
-
-    # ✅ RELAÇÃO CORRETA
     producoes = relationship("Producao", back_populates="ficha")
 
 # ==========================================================
@@ -104,17 +97,16 @@ class Ficha(Base):
 class Producao(Base):
     __tablename__ = "producao"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
+    quantidade = Column(Integer, nullable=False)
 
-    ficha_id = Column(Integer, ForeignKey("fichas.id"), nullable=False)
-    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"), nullable=False)
+    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"))
+    ficha_id = Column(Integer, ForeignKey("fichas.id"))
 
-    quantidade = Column(Integer)
-    valor = Column(Float)
-    criado_em = Column(DateTime, default=datetime.utcnow)
-
-    ficha = relationship("Ficha", back_populates="producoes")
+    # ✅ relacionamentos corretos
     usuario = relationship("UsuarioOperacional", back_populates="producoes")
+    ficha = relationship("Ficha", back_populates="producoes")
+
 
 # ==========================================================
 # 🔹 USUÁRIOS DO SISTEMA DE LOGIN (geral)

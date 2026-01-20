@@ -192,6 +192,7 @@ async def responder_ficha(
     token: str,
     db: Session = Depends(get_db)
 ):
+    # 1️⃣ Busca ficha pelo token
     ficha = (
         db.query(Ficha)
         .filter(Ficha.token_qr == token)
@@ -199,39 +200,40 @@ async def responder_ficha(
     )
 
     if not ficha:
-        raise HTTPException(status_code=404, detail="Ficha não encontrada")
+        return HTMLResponse("Ficha não encontrada", status_code=404)
 
-    # 🔒 ACESSO SEGURO AO MODELO (evita AttributeError)
-    modelo_nome = getattr(ficha, "modelo", None)
+    # 2️⃣ Garante que o formulário existe
+    formulario = ficha.formulario
+    if not formulario:
+        return HTMLResponse("Formulário não vinculado à ficha", status_code=500)
 
-    if not modelo_nome:
-        raise HTTPException(
-            status_code=500,
-            detail="Ficha sem modelo vinculado (estrutura antiga)"
-        )
-
-    formulario = (
-        db.query(Formulario)
-        .filter(Formulario.nome_modelo == modelo_nome)
-        .first()
+    # 3️⃣ Busca valores vinculados ao modelo
+    valores = (
+        db.query(ValorModelo)
+        .filter(ValorModelo.modelo_id == formulario.id)
+        .all()
     )
 
-    funcoes = []
-    if formulario:
-        funcoes = (
-            db.query(ValorModelo.funcao)
-            .filter(ValorModelo.modelo_id == formulario.id)
-            .distinct()
-            .order_by(ValorModelo.funcao.asc())
-            .all()
-        )
+    # 4️⃣ Agrupa funções únicas
+    funcoes = sorted(set(v.funcao for v in valores))
+
+    # 5️⃣ Operadores ativos
+    operadores = (
+        db.query(UsuarioOperacional)
+        .filter(UsuarioOperacional.ativo == 1)
+        .order_by(UsuarioOperacional.nome.asc())
+        .all()
+    )
 
     return templates.TemplateResponse(
         "responder_ficha.html",
         {
             "request": request,
             "ficha": ficha,
-            "funcoes": [f[0] for f in funcoes]
+            "formulario": formulario,
+            "funcoes": funcoes,
+            "valores": valores,
+            "operadores": operadores
         }
     )
 

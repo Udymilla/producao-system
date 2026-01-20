@@ -38,20 +38,13 @@
 
       <div>
         <label class="block text-sm font-medium">Função</label>
-        <select name="funcao" required
-                class="w-full border rounded px-3 py-2">
-          <option value="">Selecione...</option>
+        <select name="funcao" required>
+         <option value="">Selecione...</option>
           {% for f in funcoes %}
-            <option value="{{ f }}">{{ f }}</option>
+         <option value="{{ f.funcao }}">{{ f.funcao }}</option>
           {% endfor %}
         </select>
       </div>
-    </div>
-
-    <div class="mb-4">
-      <label class="block text-sm font-medium">Quantidade Produzida</label>
-      <input type="number" name="quantidade" min="1" required
-             class="w-full border rounded px-3 py-2">
     </div>
 
     <button type="submit"
