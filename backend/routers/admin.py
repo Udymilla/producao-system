@@ -281,13 +281,13 @@ async def gerar_fichas(
         token_qr = str(uuid.uuid4())
 
         ficha = Ficha(
-            numero_ficha=str(proximo_numero + i),
-            modelo_id=formulario.id,   # ✅ FK correta
-            funcao="GERAL",
-            quantidade_total=quantidade,
-            setor_atual="CORTE",
-            token_qr=token_qr
-        )
+    numero_ficha=str(proximo_numero + i),
+    formulario_id=formulario.id,  # ✅ NOME CERTO
+    funcao="GERAL",
+    quantidade_total=quantidade,
+    setor_atual="CORTE",
+    token_qr=token_qr
+)
 
         db.add(ficha)
         fichas.append(ficha)
@@ -321,7 +321,8 @@ async def gerar_fichas(
         c.drawCentredString(
             10.5 * cm,
             25 * cm,
-            f"MODELO: {ficha.modelo_ref.nome_modelo}"  # ✅ relacionamento correto
+           f"MODELO: {ficha.formulario.nome_modelo}"
+
         )
 
         c.setFont("Helvetica", 16)

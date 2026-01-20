@@ -146,21 +146,22 @@ def consultar_producao_dados(
 ):
     query = (
         db.query(
-            Formulario.nome_modelo.label("modelo"),
+            Ficha.modelo.label("modelo"),
             func.sum(Producao.quantidade).label("total_pecas"),
             func.sum(Producao.valor).label("valor_total"),
             func.array_agg(Ficha.numero_ficha).label("fichas")
         )
-        .join(Ficha, Ficha.id == Producao.ficha_id)
-        .join(Formulario, Formulario.id == Ficha.modelo_id)
+        .join(Ficha, Producao.ficha_id == Ficha.id)
         .join(UsuarioOperacional, UsuarioOperacional.id == Producao.usuario_id)
     )
 
+    # 🔍 operador
     if operador:
         query = query.filter(
             UsuarioOperacional.nome.ilike(f"%{operador}%")
         )
 
+    # 📅 datas (conversão correta)
     if data_inicial:
         query = query.filter(
             Producao.criado_em >= datetime.fromisoformat(data_inicial)
@@ -171,7 +172,7 @@ def consultar_producao_dados(
             Producao.criado_em <= datetime.fromisoformat(data_final)
         )
 
-    query = query.group_by(Formulario.nome_modelo)
+    query = query.group_by(Ficha.modelo)
 
     resultados = query.all()
 

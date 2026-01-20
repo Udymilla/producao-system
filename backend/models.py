@@ -51,14 +51,12 @@ class UsuarioOperacional(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     senha = Column(String, nullable=False)
-    funcao = Column(String, nullable=False)  # costura, acabamento, corte, etc.
-    ativo = Column(Integer, default=1)       # 1 = ativo, 0 = inativo
-    tipo = Column(String, nullable=True, default="operador")  # Ex: 'operacional', 'lider'
+    funcao = Column(String, nullable=False)
+    ativo = Column(Integer, default=1)
+    tipo = Column(String, default="operador")
 
-    # 🔗 RELACIONAMENTOS
-    fichas = relationship("Ficha", back_populates="usuario")
+    # ✅ SOMENTE ISSO
     producoes = relationship("Producao", back_populates="usuario")
-
 
 # ==========================================================
 # 🔹 FORMULÁRIOS / MODELOS
@@ -87,23 +85,17 @@ class Ficha(Base):
     id = Column(Integer, primary_key=True, index=True)
     numero_ficha = Column(String, unique=True, index=True)
 
-    # 🔴 REMOVE o campo modelo antigo (string)
-    # modelo = Column(String, nullable=False)
-
-    # ✅ RELAÇÃO CORRETA COM FORMULÁRIO
     formulario_id = Column(Integer, ForeignKey("formularios.id"), nullable=False)
     formulario = relationship("Formulario")
 
     funcao = Column(String, nullable=False)
     quantidade_total = Column(Integer, nullable=False)
-    setor_atual = Column(String, nullable=True)
+    setor_atual = Column(String)
     status = Column(Enum(StatusFicha), default=StatusFicha.EM_PRODUCAO)
-    token_qr = Column(String(64), unique=True, nullable=True)
+    token_qr = Column(String(64), unique=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
 
-    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"))
-    usuario = relationship("UsuarioOperacional", back_populates="fichas")
-
+    # ✅ RELAÇÃO CORRETA
     producoes = relationship("Producao", back_populates="ficha")
 
 # ==========================================================
@@ -114,25 +106,15 @@ class Producao(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    # ✅ produção sempre aponta para uma ficha
     ficha_id = Column(Integer, ForeignKey("fichas.id"), nullable=False)
-    ficha = relationship("Ficha", back_populates="producoes")
+    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"), nullable=False)
 
-    # ✅ opcional: usuário operacional que lançou (se tiver login/pin)
-    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"), nullable=True)
-    usuario = relationship("UsuarioOperacional", back_populates="producoes")
-
-    # ✅ opcional: manter o nome do operador como texto (histórico)
-    operador = Column(String, nullable=True)
-
-    # ✅ campos do lançamento
-    servico = Column(String, nullable=True)
-    tamanho = Column(String, nullable=True)
-    quantidade = Column(Integer, nullable=False, default=0)
-    valor = Column(Float, nullable=False, default=0.0)
-
+    quantidade = Column(Integer)
+    valor = Column(Float)
     criado_em = Column(DateTime, default=datetime.utcnow)
 
+    ficha = relationship("Ficha", back_populates="producoes")
+    usuario = relationship("UsuarioOperacional", back_populates="producoes")
 
 # ==========================================================
 # 🔹 USUÁRIOS DO SISTEMA DE LOGIN (geral)
