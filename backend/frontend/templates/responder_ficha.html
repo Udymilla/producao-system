@@ -6,69 +6,61 @@
 <div class="max-w-lg mx-auto bg-white p-6 rounded-lg shadow">
 
   <form method="post" action="/responder_ficha">
-
     <input type="hidden" name="ficha_id" value="{{ ficha.id }}">
 
     <div class="grid grid-cols-2 gap-4 mb-4">
       <div>
-        <label class="block text-sm font-medium">Número da Ficha</label>
-        <input type="text" value="{{ ficha.numero_ficha }}" readonly
-               class="w-full bg-gray-100 border rounded px-3 py-2">
+        <label>Número da Ficha</label>
+        <input value="{{ ficha.numero_ficha }}" readonly class="input">
       </div>
-
       <div>
-        <label class="block text-sm font-medium">Quantidade Total</label>
-        <input type="text" value="{{ ficha.quantidade_total }}" readonly
-               class="w-full bg-gray-100 border rounded px-3 py-2">
+        <label>Quantidade Total</label>
+        <input value="{{ ficha.quantidade_total }}" readonly class="input">
       </div>
     </div>
 
-    <div class="mb-4">
-      <label class="block text-sm font-medium">Modelo</label>
-      <input type="text" value="{{ ficha.modelo }}" readonly
-             class="w-full bg-gray-100 border rounded px-3 py-2">
+    <label>Modelo</label>
+    <input value="{{ formulario.nome_modelo }}" readonly class="input mb-3">
+
+    {% if formulario.url_imagem %}
+    <div class="text-center mb-4">
+      <img src="{{ formulario.url_imagem }}" class="mx-auto rounded max-w-xs">
     </div>
+    {% endif %}
 
-    <div class="row mt-3">
+    <label>Cor do Viés</label>
+    <input type="text"
+       value="{{ ficha.formulario.cor_vies or '' }}"
+       readonly>
 
-  <div class="col">
-    <label class="block text-sm font-medium">Cor do Viés</label>
-    <input type="text" 
-           value="{{ ficha.formulario.cor_vies }}" readonly
-           class="w-full bg-gray-100 border rounded px-3 py-2">
-  </div>
+    <label>CA</label>
+    <input type="text"
+       value="{{ ficha.formulario.ca or '' }}"
+       readonly>
 
-  <div class="col">
-    <label class="block text-sm font-medium">CA</label>
-    <input type="text" 
-           value="{{ ficha.formulario.ca }}" readonly
-           class="w-full bg-gray-100 border rounded px-3 py-2">
-  </div>
-</div>
 
-    <div class="grid grid-cols-2 gap-4 mb-4">
+    <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-medium">Operador</label>
-        <input type="text" name="operador" required
-               class="w-full border rounded px-3 py-2">
+        <label>Operador</label>
+        <input name="operador" required class="input">
       </div>
 
       <div>
-        <label class="block text-sm font-medium">Função</label>
-        <select name="funcao" required>
-         <option value="">Selecione...</option>
+        <label>Função</label>
+        <select name="funcao" required class="input">
+          <option value="">Selecione…</option>
           {% for f in funcoes %}
-         <option value="{{ f.funcao }}">{{ f.funcao }}</option>
+          <option value="{{ f.funcao }}">
+            {{ f.funcao }}{% if f.tamanho %} - {{ f.tamanho }}{% endif %}
+          </option>
           {% endfor %}
         </select>
       </div>
     </div>
 
-    <button type="submit"
-            class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
+    <button class="w-full bg-green-600 text-white py-2 rounded">
       ✅ Lançar Produção
     </button>
   </form>
-
 </div>
 {% endblock %}

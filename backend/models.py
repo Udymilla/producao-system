@@ -51,31 +51,17 @@ class UsuarioOperacional(Base):
     id = Column(Integer, primary_key=True)
     nome = Column(String, nullable=False)
 
-
-    # ✅ relação correta
-    producoes = relationship("Producao", back_populates="usuario")
-
 # ==========================================================
 # 🔹 FORMULÁRIOS / MODELOS
 # ==========================================================
-class Formulario(Base):
-    __tablename__ = "formularios"
+class Funcao(Base):
+    __tablename__ = "funcoes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    nome_modelo = Column(String(120), nullable=False)
-    tamanhos = Column(String(100))
+    id = Column(Integer, primary_key=True)
+    nome = Column(String, nullable=False, unique=True)
     ativo = Column(Boolean, default=True)
-    url_imagem = Column(String, nullable=True)
-    criado_em = Column(DateTime, default=datetime.utcnow)
-    cor_vies = Column(String(50))
-    ca = Column(String(50))
 
-
-    # 🔗 RELACIONAMENTOS
-    fichas = relationship("Ficha", back_populates="formulario")
-    valores = relationship("ValorModelo", back_populates="modelo_ref")
-
-
+    valores = relationship("ValorModelo", back_populates="funcao")
 # ==========================================================
 # 🔹 FICHAS
 # ==========================================================
@@ -83,31 +69,28 @@ class Ficha(Base):
     __tablename__ = "fichas"
 
     id = Column(Integer, primary_key=True)
-    numero_ficha = Column(String, unique=True, nullable=False)
+    numero_ficha = Column(String, nullable=False)
+    quantidade_total = Column(Integer, nullable=False)
+    formulario_id = Column(Integer, ForeignKey("formularios.id"))
+    token_qr = Column(String, unique=True)
 
-    quantidade_total = Column(Integer, nullable=False)  # ✅ OBRIGATÓRIO
-
-    formulario_id = Column(Integer, ForeignKey("formularios.id"), nullable=False)
-
-    token_qr = Column(String, unique=True, nullable=False)
-
-    formulario = relationship("Formulario")
+    formulario = relationship("Formulario", back_populates="fichas")
     producoes = relationship("Producao", back_populates="ficha")
 
 # ==========================================================
 # 🔹 PRODUÇÃO (Lançamentos feitos pelo sistema ou QR)
 # ==========================================================
 class Producao(Base):
-    __tablename__ = "producao"
+    __tablename__ = "producoes"
 
     id = Column(Integer, primary_key=True)
-    quantidade = Column(Integer, nullable=False)
-
-    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"))
     ficha_id = Column(Integer, ForeignKey("fichas.id"))
+    operador = Column(String, nullable=False)
+    funcao = Column(String, nullable=False)
+    quantidade = Column(Integer, nullable=False)
+    valor = Column(Float, default=0)
+    criado_em = Column(DateTime, default=datetime.utcnow)
 
-    # ✅ relacionamentos corretos
-    usuario = relationship("UsuarioOperacional", back_populates="producoes")
     ficha = relationship("Ficha", back_populates="producoes")
 
 
@@ -127,22 +110,23 @@ class Usuario(Base):
 # 🔹 VALORES POR MODELO
 # ==========================================================
 class ValorModelo(Base):
-    __tablename__ = "valores_modelos"
+    __tablename__ = "valores_modelo"
 
-    id = Column(Integer, primary_key=True, index=True)
-    modelo_id = Column(Integer, ForeignKey("formularios.id"), nullable=False)
-
-    funcao = Column(String, nullable=False)
+    id = Column(Integer, primary_key=True)
+    formulario_id = Column(Integer, ForeignKey("formularios.id"))
+    funcao_id = Column(Integer, ForeignKey("funcoes.id"))
     valor_unitario = Column(Float, nullable=False)
-    tamanho = Column(String, nullable=True)
 
-    url_imagem = Column(String, nullable=True)
-    criado_em = Column(DateTime, default=datetime.utcnow)
-    atualizado_em = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    formulario = relationship("Formulario", back_populates="valores")
+    funcao = relationship("Funcao", back_populates="valores")
 
-    __table_args__ = (
-        UniqueConstraint("modelo_id", "funcao", "tamanho", name="uq_modelo_funcao_tamanho"),
-    )
+class Formulario(Base):
+    __tablename__ = "formularios"
 
-    # 🔗 relacionamento com Formulario
-    modelo_ref = relationship("Formulario", back_populates="valores")
+    id = Column(Integer, primary_key=True)
+    nome_modelo = Column(String)
+    cor_vies = Column(String)
+    ca = Column(String)
+    url_imagem = Column(String)
+
+    valores = relationship("ValorModelo", back_populates="formulario")

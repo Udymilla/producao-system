@@ -199,14 +199,14 @@ async def responder_ficha(
     )
 
     if not ficha:
-        return HTMLResponse(
-            "<h2>Ficha não encontrada ou QR inválido</h2>",
-            status_code=404
-        )
+        raise HTTPException(status_code=404, detail="Ficha não encontrada")
 
-    operadores = (
-        db.query(UsuarioOperacional)
-        .order_by(UsuarioOperacional.nome.asc())
+    formulario = ficha.formulario
+
+    funcoes = (
+        db.query(ValorModelo)
+        .filter(ValorModelo.modelo_id == formulario.id)
+        .order_by(ValorModelo.funcao.asc())
         .all()
     )
 
@@ -215,15 +215,17 @@ async def responder_ficha(
         {
             "request": request,
             "ficha": ficha,
-            "operadores": operadores
+            "formulario": formulario,
+            "funcoes": funcoes
         }
     )
+
 
 @router.post("/responder_ficha")
 async def responder_ficha_post(
     ficha_id: int = Form(...),
     operador: str = Form(...),
-    quantidade: int = Form(...),
+    funcao: str = Form(...),  # ✅ ADICIONAR ISSO
     db: Session = Depends(get_db)
 ):
     ficha = db.query(Ficha).filter(Ficha.id == ficha_id).first()
@@ -234,10 +236,10 @@ async def responder_ficha_post(
     producao = Producao(
         ficha_id=ficha.id,
         operador=operador,
-        modelo=ficha.modelo,
-        servico=ficha.funcao,
-        quantidade=quantidade,
-        valor=0,  # depois podemos calcular automático
+        modelo=ficha.formulario.nome_modelo,
+        servico=funcao,          # ✅ função escolhida
+        quantidade=ficha.quantidade_total,  # ✅ usa a ficha
+        valor=0,
         criado_em=datetime.utcnow()
     )
 
@@ -248,4 +250,3 @@ async def responder_ficha_post(
         url="/dashboard",
         status_code=303
     )
-
