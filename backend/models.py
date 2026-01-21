@@ -50,7 +50,7 @@ class UsuarioOperacional(Base):
 
     id = Column(Integer, primary_key=True)
     nome = Column(String, nullable=False)
-    perfil = Column(String, nullable=False)
+
 
     # ✅ relação correta
     producoes = relationship("Producao", back_populates="usuario")
@@ -67,6 +67,9 @@ class Formulario(Base):
     ativo = Column(Boolean, default=True)
     url_imagem = Column(String, nullable=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
+    cor_vies = Column(String(50))
+    ca = Column(String(50))
+
 
     # 🔗 RELACIONAMENTOS
     fichas = relationship("Ficha", back_populates="formulario")

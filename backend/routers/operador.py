@@ -192,7 +192,6 @@ async def responder_ficha(
     token: str,
     db: Session = Depends(get_db)
 ):
-    # 1️⃣ Busca ficha pelo token
     ficha = (
         db.query(Ficha)
         .filter(Ficha.token_qr == token)
@@ -200,27 +199,13 @@ async def responder_ficha(
     )
 
     if not ficha:
-        return HTMLResponse("Ficha não encontrada", status_code=404)
+        return HTMLResponse(
+            "<h2>Ficha não encontrada ou QR inválido</h2>",
+            status_code=404
+        )
 
-    # 2️⃣ Garante que o formulário existe
-    formulario = ficha.formulario
-    if not formulario:
-        return HTMLResponse("Formulário não vinculado à ficha", status_code=500)
-
-    # 3️⃣ Busca valores vinculados ao modelo
-    valores = (
-        db.query(ValorModelo)
-        .filter(ValorModelo.modelo_id == formulario.id)
-        .all()
-    )
-
-    # 4️⃣ Agrupa funções únicas
-    funcoes = sorted(set(v.funcao for v in valores))
-
-    # 5️⃣ Operadores ativos
     operadores = (
         db.query(UsuarioOperacional)
-        .filter(UsuarioOperacional.ativo == 1)
         .order_by(UsuarioOperacional.nome.asc())
         .all()
     )
@@ -230,9 +215,6 @@ async def responder_ficha(
         {
             "request": request,
             "ficha": ficha,
-            "formulario": formulario,
-            "funcoes": funcoes,
-            "valores": valores,
             "operadores": operadores
         }
     )
