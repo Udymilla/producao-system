@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
-
+from fastapi.responses import RedirectResponse
 from backend.database import engine, Base
 from backend.routers import auth, operador, admin, api
 
@@ -28,3 +28,7 @@ app.include_router(auth.router)
 app.include_router(operador.router)
 app.include_router(admin.router)
 app.include_router(api.router)
+
+@app.get("/")
+async def home():
+    return RedirectResponse("/login")

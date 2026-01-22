@@ -69,13 +69,23 @@ class Ficha(Base):
     __tablename__ = "fichas"
 
     id = Column(Integer, primary_key=True)
-    numero_ficha = Column(String, nullable=False)
+    numero_ficha = Column(Integer, nullable=False)
     quantidade_total = Column(Integer, nullable=False)
-    formulario_id = Column(Integer, ForeignKey("formularios.id"))
-    token_qr = Column(String, unique=True)
 
-    formulario = relationship("Formulario", back_populates="fichas")
-    producoes = relationship("Producao", back_populates="ficha")
+    formulario_id = Column(
+        Integer,
+        ForeignKey("formularios.id"),
+        nullable=False
+    )
+
+    criado_em = Column(DateTime, default=datetime.utcnow)
+
+    # ✅ RELACIONAMENTO CORRETO
+    formulario = relationship(
+        "Formulario",
+        back_populates="fichas"
+    )
+
 
 # ==========================================================
 # 🔹 PRODUÇÃO (Lançamentos feitos pelo sistema ou QR)
