@@ -69,8 +69,9 @@ class Ficha(Base):
     __tablename__ = "fichas"
 
     id = Column(Integer, primary_key=True)
-    numero_ficha = Column(Integer, nullable=False)
+    numero_ficha = Column(String, nullable=False)
     quantidade_total = Column(Integer, nullable=False)
+    token_qr = Column(String, unique=True, nullable=False)
 
     formulario_id = Column(
         Integer,
@@ -78,14 +79,11 @@ class Ficha(Base):
         nullable=False
     )
 
-    criado_em = Column(DateTime, default=datetime.utcnow)
-
     # ✅ RELACIONAMENTO CORRETO
     formulario = relationship(
         "Formulario",
         back_populates="fichas"
     )
-
 
 # ==========================================================
 # 🔹 PRODUÇÃO (Lançamentos feitos pelo sistema ou QR)
@@ -120,23 +118,43 @@ class Usuario(Base):
 # 🔹 VALORES POR MODELO
 # ==========================================================
 class ValorModelo(Base):
-    __tablename__ = "valores_modelo"
+    __tablename__ = "valores_modelos"
 
     id = Column(Integer, primary_key=True)
-    formulario_id = Column(Integer, ForeignKey("formularios.id"))
-    funcao_id = Column(Integer, ForeignKey("funcoes.id"))
-    valor_unitario = Column(Float, nullable=False)
+    funcao = Column(String, nullable=False)
+    valor_unitario = Column(Float)
+    tamanho = Column(String)
 
-    formulario = relationship("Formulario", back_populates="valores")
-    funcao = relationship("Funcao", back_populates="valores")
+    modelo_id = Column(
+        Integer,
+        ForeignKey("formularios.id"),
+        nullable=False
+    )
+
+    formulario = relationship(
+        "Formulario",
+        back_populates="valores"
+    )
 
 class Formulario(Base):
     __tablename__ = "formularios"
 
     id = Column(Integer, primary_key=True)
-    nome_modelo = Column(String)
+    nome_modelo = Column(String, nullable=False)
+    url_imagem = Column(String)
     cor_vies = Column(String)
     ca = Column(String)
-    url_imagem = Column(String)
+    ativo = Column(Boolean, default=True)
 
-    valores = relationship("ValorModelo", back_populates="formulario")
+    # ✅ RELACIONAMENTO CORRETO
+    fichas = relationship(
+        "Ficha",
+        back_populates="formulario",
+        cascade="all, delete-orphan"
+    )
+
+    valores = relationship(
+        "ValorModelo",
+        back_populates="formulario",
+        cascade="all, delete-orphan"
+    )
