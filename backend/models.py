@@ -1,9 +1,9 @@
 from datetime import datetime
 import enum
-
 from sqlalchemy import (
     Column,
     Integer,
+    Numeric,
     String,
     Float,
     DateTime,
@@ -59,9 +59,12 @@ class Funcao(Base):
 
     id = Column(Integer, primary_key=True)
     nome = Column(String, nullable=False, unique=True)
-    ativo = Column(Boolean, default=True)
 
-    valores = relationship("ValorModelo", back_populates="funcao")
+    valores = relationship(
+        "ValorModelo",
+        back_populates="funcao",
+        cascade="all, delete-orphan"
+    )
 # ==========================================================
 # 🔹 FICHAS
 # ==========================================================
@@ -69,17 +72,12 @@ class Ficha(Base):
     __tablename__ = "fichas"
 
     id = Column(Integer, primary_key=True)
-    numero_ficha = Column(String, nullable=False)
-    quantidade_total = Column(Integer, nullable=False)
-    token_qr = Column(String, unique=True, nullable=False)
-
     formulario_id = Column(
         Integer,
         ForeignKey("formularios.id"),
         nullable=False
     )
 
-    # ✅ RELACIONAMENTO CORRETO
     formulario = relationship(
         "Formulario",
         back_populates="fichas"
@@ -118,43 +116,38 @@ class Usuario(Base):
 # 🔹 VALORES POR MODELO
 # ==========================================================
 class ValorModelo(Base):
-    __tablename__ = "valores_modelos"
+    __tablename__ = "valores_modelo"
 
     id = Column(Integer, primary_key=True)
-    funcao = Column(String, nullable=False)
-    valor_unitario = Column(Float)
-    tamanho = Column(String)
 
     modelo_id = Column(
         Integer,
-        ForeignKey("formularios.id"),
+        ForeignKey("formularios.id", ondelete="CASCADE"),
         nullable=False
     )
 
-    formulario = relationship(
-        "Formulario",
-        back_populates="valores"
+    funcao_id = Column(
+        Integer,
+        ForeignKey("funcoes.id", ondelete="CASCADE"),
+        nullable=False
     )
+
+    valor = Column(Numeric(10, 2), nullable=True)
+    tamanho = Column(String, nullable=True)
+
+    modelo = relationship("Formulario", back_populates="valores")
+    funcao = relationship("Funcao", back_populates="valores")
+
 
 class Formulario(Base):
     __tablename__ = "formularios"
 
     id = Column(Integer, primary_key=True)
     nome_modelo = Column(String, nullable=False)
-    url_imagem = Column(String)
-    cor_vies = Column(String)
-    ca = Column(String)
-    ativo = Column(Boolean, default=True)
-
-    # ✅ RELACIONAMENTO CORRETO
-    fichas = relationship(
-        "Ficha",
-        back_populates="formulario",
-        cascade="all, delete-orphan"
-    )
 
     valores = relationship(
         "ValorModelo",
-        back_populates="formulario",
+        back_populates="modelo",
         cascade="all, delete-orphan"
     )
+

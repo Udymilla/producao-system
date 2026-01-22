@@ -1,57 +1,23 @@
-from fastapi import Request, HTTPException, status
+from fastapi import Request
 from fastapi.responses import RedirectResponse
 from functools import wraps
-
-# =========================
-# Funções base
-# =========================
-
-def _require_login(request: Request):
-    if not request.session.get("usuario_id"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuário não autenticado"
-        )
-
-def _require_admin(request: Request):
-    _require_login(request)
-
-    if request.session.get("perfil") != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acesso restrito à administração"
-        )
-
-# =========================
-# Decorators
-# =========================
 
 def login_required(func):
     @wraps(func)
     async def wrapper(*args, **kwargs):
-        request: Request = kwargs.get("request") or args[0]
+        request: Request = kwargs.get("request")
 
-        if not request.session.get("usuario_id"):
-            # ✅ rota correta
-            return RedirectResponse("/login", status_code=303)
+        if not request:
+            for arg in args:
+                if isinstance(arg, Request):
+                    request = arg
+                    break
 
-        return await func(*args, **kwargs)
-    return wrapper
+        if not request:
+            return RedirectResponse("/login", status_code=302)
 
-
-def admin_required(func):
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        request: Request = kwargs.get("request") or args[0]
-
-        if not request.session.get("usuario_id"):
-            return RedirectResponse("/login", status_code=303)
-
-        if request.session.get("perfil") != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso restrito à administração"
-            )
+        if not request.session.get("user_id"):
+            return RedirectResponse("/login", status_code=302)
 
         return await func(*args, **kwargs)
 

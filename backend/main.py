@@ -6,7 +6,7 @@ from backend.database import engine, Base
 from backend.routers import auth, operador, admin, api
 
 # cria tabelas
-Base.metadata.create_all(bind=engine)
+#Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Sistema de Produção Dadalto")
 
