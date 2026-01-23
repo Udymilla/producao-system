@@ -50,4 +50,6 @@ async def login_post(
     request.session["usuario"] = user.nome
     request.session["perfil"] = user.perfil
 
+    print("LOGIN OK | SESSION:", dict(request.session))
+    
     return RedirectResponse("/dashboard", status_code=303)

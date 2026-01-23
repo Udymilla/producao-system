@@ -22,7 +22,7 @@ router = APIRouter()
 # ======================================================
 
 @router.get("/dashboard", response_class=HTMLResponse)
-@login_required
+#@login_required
 async def dashboard(request: Request):
     return templates.TemplateResponse(
         "dashboard.html",
@@ -52,6 +52,9 @@ async def lancar_page(
             "request": request,
             "modelos": modelos
         }
+
+    
+
     )
 
 # ======================================================

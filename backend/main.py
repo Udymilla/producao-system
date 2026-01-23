@@ -13,9 +13,10 @@ app = FastAPI(title="Sistema de Produção Dadalto")
 # middleware de sessão
 app.add_middleware(
     SessionMiddleware,
-    secret_key="supersegredo123"
+    secret_key="supersegredo123",
+    same_site="lax",
+    https_only=False
 )
-
 # arquivos estáticos
 app.mount(
     "/static",

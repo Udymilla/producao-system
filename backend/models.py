@@ -72,16 +72,11 @@ class Ficha(Base):
     __tablename__ = "fichas"
 
     id = Column(Integer, primary_key=True)
-    formulario_id = Column(
-        Integer,
-        ForeignKey("formularios.id"),
-        nullable=False
-    )
+    formulario_id = Column(Integer, ForeignKey("formularios.id"))
 
-    formulario = relationship(
-        "Formulario",
-        back_populates="fichas"
-    )
+    formulario = relationship("Formulario", back_populates="fichas")
+    producoes = relationship("Producao", back_populates="ficha")
+
 
 # ==========================================================
 # 🔹 PRODUÇÃO (Lançamentos feitos pelo sistema ou QR)
@@ -119,35 +114,30 @@ class ValorModelo(Base):
     __tablename__ = "valores_modelo"
 
     id = Column(Integer, primary_key=True)
+    modelo_id = Column(Integer, ForeignKey("formularios.id"))
+    funcao = Column(String, nullable=False)
+    valor = Column(Float, nullable=True)
 
-    modelo_id = Column(
-        Integer,
-        ForeignKey("formularios.id", ondelete="CASCADE"),
-        nullable=False
+    formulario = relationship(
+        "Formulario",
+        back_populates="valores"
     )
-
-    funcao_id = Column(
-        Integer,
-        ForeignKey("funcoes.id", ondelete="CASCADE"),
-        nullable=False
-    )
-
-    valor = Column(Numeric(10, 2), nullable=True)
-    tamanho = Column(String, nullable=True)
-
-    modelo = relationship("Formulario", back_populates="valores")
-    funcao = relationship("Funcao", back_populates="valores")
-
 
 class Formulario(Base):
     __tablename__ = "formularios"
 
     id = Column(Integer, primary_key=True)
     nome_modelo = Column(String, nullable=False)
+    ativo = Column(Boolean, default=True)
 
-    valores = relationship(
-        "ValorModelo",
-        back_populates="modelo",
+    fichas = relationship(
+        "Ficha",
+        back_populates="formulario",
         cascade="all, delete-orphan"
     )
 
+    valores = relationship(
+        "ValorModelo",
+        back_populates="formulario",
+        cascade="all, delete-orphan"
+    )
