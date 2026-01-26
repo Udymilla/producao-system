@@ -8,19 +8,24 @@
   <form method="post" action="/responder_ficha">
     <input type="hidden" name="ficha_id" value="{{ ficha.id }}">
 
+    <!-- Número / Quantidade -->
     <div class="grid grid-cols-2 gap-4 mb-4">
       <div>
-        <label>Número da Ficha</label>
+        <label class="font-bold block mb-1">Número da Ficha</label>
         <input value="{{ ficha.numero_ficha }}" readonly class="input">
       </div>
+
       <div>
-        <label>Quantidade Total</label>
+        <label class="font-bold block mb-1">Quantidade Total</label>
         <input value="{{ ficha.quantidade_total }}" readonly class="input">
       </div>
     </div>
 
-    <label>Modelo</label>
-    <input value="{{ formulario.nome_modelo }}" readonly class="input mb-3">
+    <!-- Modelo -->
+    <div class="mb-4">
+      <label class="font-bold block mb-1">Modelo</label>
+      <input value="{{ formulario.nome_modelo }}" readonly class="input">
+    </div>
 
     {% if formulario.url_imagem %}
     <div class="text-center mb-4">
@@ -28,39 +33,49 @@
     </div>
     {% endif %}
 
-    <label>Cor do Viés</label>
-    <input type="text"
-       value="{{  formulario.cor_vies or "-" }}"
-       readonly>
-
-    <label>CA</label>
-    <input type="text"
-       value="{{ formulario.ca or "-" }}"
-       readonly>
-
-
-    <div class="grid grid-cols-2 gap-4">
+    <!-- CA / Cor do Viés -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
       <div>
-        <label>Operador</label>
+        <label class="font-bold block mb-1">CA</label>
+        <input value="{{ formulario.ca or '-' }}" readonly class="input">
+      </div>
+
+      <div>
+        <label class="font-bold block mb-1">Cor do Viés</label>
+        <input value="{{ formulario.cor_vies or '-' }}" readonly class="input">
+      </div>
+    </div>
+
+    <!-- Operador / Função -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+      <div>
+        <label class="font-bold block mb-1">Operador</label>
         <input name="operador" required class="input">
       </div>
 
       <div>
-        <label>Função</label>
-        <select name="funcao" required class="input">
-          <option value="">Selecione…</option>
-          {% for f in funcoes %}
-          <option value="{{ f.funcao }}">
-            {{ f.funcao }}{% if f.tamanho %} - {{ f.tamanho }}{% endif %}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
+  <label class="font-bold block mb-1">Função</label>
+
+  <select name="funcao_id" required class="input">
+    <option value="">Selecione…</option>
+
+    {% for f in funcoes %}
+      <option value="{{ f.id }}">
+        {{ f.nome }}
+        {% if f.tamanho %}
+          - {{ f.tamanho }}
+        {% endif %}
+      </option>
+    {% endfor %}
+
+  </select>
+</div>
     </div>
 
-    <button class="w-full bg-green-600 text-white py-2 rounded">
+    <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold">
       ✅ Lançar Produção
     </button>
+
   </form>
 </div>
 {% endblock %}

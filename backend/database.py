@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
+
 # ======================================================
 # CONFIGURAÇÃO DO BANCO DE DADOS
 # ======================================================
@@ -10,14 +11,10 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 # postgresql://usuario:senha@localhost:5432/nome_do_banco
 DATABASE_URL = "postgresql+psycopg://postgres:producao@localhost:5432/producao"
 
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine)
 
-# Cria o engine
-engine = create_engine(
-    DATABASE_URL,
-    echo=False,        # True se quiser ver SQL no terminal
-    pool_pre_ping=True
-)
-
+Base = declarative_base()
 # Session factory
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -25,8 +22,6 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-# Base para os models
-Base = declarative_base()
 
 # ======================================================
 # DEPENDÊNCIA DE BANCO (USADA NOS ROUTERS)

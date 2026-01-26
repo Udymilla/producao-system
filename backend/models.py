@@ -65,6 +65,7 @@ class Funcao(Base):
         back_populates="funcao",
         cascade="all, delete-orphan"
     )
+
 # ==========================================================
 # 🔹 FICHAS
 # ==========================================================
@@ -72,11 +73,30 @@ class Ficha(Base):
     __tablename__ = "fichas"
 
     id = Column(Integer, primary_key=True)
+
+    numero_ficha = Column(
+        Integer,
+        nullable=False,
+        unique=True,
+        index=True
+    )
+
+    token_qr = Column(        
+        String(36),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+
+    quantidade_total = Column(     
+        Integer,
+        nullable=False
+    )
+
     formulario_id = Column(Integer, ForeignKey("formularios.id"))
 
     formulario = relationship("Formulario", back_populates="fichas")
     producoes = relationship("Producao", back_populates="ficha")
-
 
 # ==========================================================
 # 🔹 PRODUÇÃO (Lançamentos feitos pelo sistema ou QR)
@@ -86,11 +106,10 @@ class Producao(Base):
 
     id = Column(Integer, primary_key=True)
     ficha_id = Column(Integer, ForeignKey("fichas.id"))
-    operador = Column(String, nullable=False)
-    funcao = Column(String, nullable=False)
-    quantidade = Column(Integer, nullable=False)
-    valor = Column(Float, default=0)
-    criado_em = Column(DateTime, default=datetime.utcnow)
+    funcao_id = Column(Integer, ForeignKey("funcoes.id"))
+    operador = Column(String)
+    quantidade = Column(Integer)
+    criado_em = Column(DateTime)
 
     ficha = relationship("Ficha", back_populates="producoes")
 
@@ -111,17 +130,34 @@ class Usuario(Base):
 # 🔹 VALORES POR MODELO
 # ==========================================================
 class ValorModelo(Base):
-    __tablename__ = "valores_modelo"
+    __tablename__ = "valores_modelos"
 
     id = Column(Integer, primary_key=True)
-    modelo_id = Column(Integer, ForeignKey("formularios.id"))
-    funcao = Column(String, nullable=False)
+
+    modelo_id = Column(
+        Integer,
+        ForeignKey("formularios.id"),
+        nullable=False
+    )
+
+    funcao_id = Column(               # ✅ FK REAL
+        Integer,
+        ForeignKey("funcoes.id"),
+        nullable=False
+    )
+
     valor = Column(Float, nullable=True)
 
     formulario = relationship(
         "Formulario",
         back_populates="valores"
     )
+
+    funcao = relationship(            # ✅ relationship correta
+        "Funcao",
+        back_populates="valores"
+    )
+
 
 class Formulario(Base):
     __tablename__ = "formularios"

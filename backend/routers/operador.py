@@ -12,7 +12,8 @@ from backend.models import (
     Ficha,
     Formulario,
     ValorModelo,
-    UsuarioOperacional
+    UsuarioOperacional,
+    Funcao
 )
 
 router = APIRouter()
@@ -187,7 +188,6 @@ def consultar_producao_dados(
 # ======================================================
 # RESPONDER FICHA (QR CODE)
 # ======================================================
-
 @router.get("/responder_ficha", response_class=HTMLResponse)
 async def responder_ficha(
     request: Request,
@@ -205,10 +205,12 @@ async def responder_ficha(
 
     formulario = ficha.formulario
 
+    # 🔑 BUSCA SOMENTE FUNÇÕES RELACIONADAS AO MODELO
     funcoes = (
-        db.query(ValorModelo)
-        .filter(ValorModelo.modelo_id == formulario.id)
-        .order_by(ValorModelo.funcao.asc())
+        db.query(Funcao)
+        .join(ValorModelo, ValorModelo.funcao_id == Funcao.id)
+        .filter(ValorModelo.modelo_id == ficha.formulario_id)
+        .order_by(Funcao.nome.asc())
         .all()
     )
 
@@ -221,7 +223,6 @@ async def responder_ficha(
             "funcoes": funcoes
         }
     )
-
 # ======================================================
 # RESPONDER FICHA (POST)
 # ======================================================
@@ -230,7 +231,7 @@ async def responder_ficha(
 async def responder_ficha_post(
     ficha_id: int = Form(...),
     operador: str = Form(...),
-    funcao: str = Form(...),
+    funcao_id: str = Form(...),
     db: Session = Depends(get_db)
 ):
     ficha = db.query(Ficha).filter(Ficha.id == ficha_id).first()
@@ -241,10 +242,7 @@ async def responder_ficha_post(
     producao = Producao(
         ficha_id=ficha.id,
         operador=operador,
-        modelo=ficha.formulario.nome_modelo,
-        servico=funcao,
         quantidade=ficha.quantidade_total,
-        valor=0.0,
         criado_em=datetime.utcnow()
     )
 

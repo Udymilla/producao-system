@@ -4,9 +4,10 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import RedirectResponse
 from backend.database import engine, Base
 from backend.routers import auth, operador, admin, api
+from backend import models
 
 # cria tabelas
-#Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Sistema de Produção Dadalto")
 
