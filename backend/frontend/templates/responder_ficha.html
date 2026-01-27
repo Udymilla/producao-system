@@ -57,18 +57,11 @@
   <label class="font-bold block mb-1">Função</label>
 
   <select name="funcao_id" required class="input">
-    <option value="">Selecione…</option>
-
-    {% for f in funcoes %}
-      <option value="{{ f.id }}">
-        {{ f.nome }}
-        {% if f.tamanho %}
-          - {{ f.tamanho }}
-        {% endif %}
-      </option>
-    {% endfor %}
-
-  </select>
+  <option value="">Selecione…</option>
+  {% for f in funcoes %}
+    <option value="{{ f.id }}">{{ f.nome }}</option>
+  {% endfor %}
+</select>
 </div>
     </div>
 

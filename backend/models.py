@@ -105,11 +105,11 @@ class Producao(Base):
     __tablename__ = "producoes"
 
     id = Column(Integer, primary_key=True)
-    ficha_id = Column(Integer, ForeignKey("fichas.id"))
-    funcao_id = Column(Integer, ForeignKey("funcoes.id"))
-    operador = Column(String)
-    quantidade = Column(Integer)
-    criado_em = Column(DateTime)
+    ficha_id = Column(Integer, ForeignKey("fichas.id"), nullable=False)
+    funcao_id = Column(Integer, ForeignKey("funcoes.id"), nullable=False)
+    operador = Column(String, nullable=False)
+    quantidade = Column(Integer, nullable=False)
+    criado_em = Column(DateTime, nullable=False)
 
     ficha = relationship("Ficha", back_populates="producoes")
 

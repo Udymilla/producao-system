@@ -149,10 +149,20 @@ async def consultar_producao_page(
 @login_required
 def consultar_producao_dados(
     operador: str = Form(""),
+    ficha_id: int = Form(...),
     data_inicial: str = Form(""),
     data_final: str = Form(""),
     db: Session = Depends(get_db)
 ):
+    
+    producoes = (
+db.query(Producao)
+.filter(
+Producao.ficha_id == ficha_id,
+Producao.operador == operador
+)
+.all()
+)
     query = (
         db.query(
             Ficha.modelo.label("modelo"),
@@ -178,6 +188,8 @@ def consultar_producao_dados(
     query = query.group_by(Ficha.modelo)
 
     resultados = query.all()
+
+    print("PRODUCOES:", producoes)
 
     return {
         "modelos": [r.modelo for r in resultados],
@@ -234,18 +246,20 @@ async def responder_ficha_post(
     funcao_id: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    
+    print("FORM DATA:", ficha_id, operador, funcao_id)
     ficha = db.query(Ficha).filter(Ficha.id == ficha_id).first()
 
     if not ficha:
         raise HTTPException(status_code=404, detail="Ficha não encontrada")
 
     producao = Producao(
-        ficha_id=ficha.id,
-        operador=operador,
-        quantidade=ficha.quantidade_total,
-        criado_em=datetime.utcnow()
-    )
-
+    ficha_id=ficha.id,
+    operador=operador,
+    funcao_id=funcao_id,
+    quantidade=ficha.quantidade_total,
+    criado_em=datetime.utcnow()
+)
     db.add(producao)
     db.commit()
 
