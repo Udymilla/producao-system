@@ -145,58 +145,66 @@ async def consultar_producao_page(
 # CONSULTAR PRODUÇÃO (DADOS)
 # ======================================================
 
-@router.post("/consultar_producao_dados")
-@login_required
-def consultar_producao_dados(
-    operador: str = Form(""),
-    ficha_id: int = Form(...),
-    data_inicial: str = Form(""),
-    data_final: str = Form(""),
+    @router.post("/consultar_producao_dados")
+    async def consultar_producao_dados(
+    operador: str = Form(...),
+    data_inicial: str = Form(None),
+    data_final: str = Form(None),
     db: Session = Depends(get_db)
-):
-    
-    producoes = (
-db.query(Producao)
-.filter(
-Producao.ficha_id == ficha_id,
-Producao.operador == operador
-)
-.all()
-)
-    query = (
-        db.query(
-            Ficha.modelo.label("modelo"),
-            func.sum(Producao.quantidade).label("total_pecas"),
-            func.sum(Producao.valor).label("valor_total")
-        )
-        .join(Ficha, Producao.ficha_id == Ficha.id)
+    ):
+ 
+     print("FILTROS:", operador, data_inicial, data_final)
+
+
+     query = (
+    db.query(
+    Formulario.nome_modelo.label("modelo"),
+    Funcao.nome.label("funcao"),
+    func.sum(Producao.quantidade).label("total_pecas")
+    )
+    .join(Formulario, Formulario.id == Producao.formulario_id)
+    .join(Funcao, Funcao.id == Producao.funcao_id)
+     .filter(Producao.operador == operador)
     )
 
-    if operador:
-        query = query.filter(Producao.operador.ilike(f"%{operador}%"))
 
     if data_inicial:
-        query = query.filter(
-            Producao.criado_em >= datetime.fromisoformat(data_inicial)
-        )
+     query = query.filter(
+    Producao.criado_em >= datetime.strptime(data_inicial, "%Y-%m-%d")
+    )
+
 
     if data_final:
-        query = query.filter(
-            Producao.criado_em <= datetime.fromisoformat(data_final)
-        )
+     query = query.filter(
+    Producao.criado_em <= datetime.strptime(data_final, "%Y-%m-%d")
+    )  
 
-    query = query.group_by(Ficha.modelo)
+
+     query = (
+     query
+    .group_by(Formulario.nome_modelo, Funcao.nome)
+    .order_by(Formulario.nome_modelo, Funcao.nome)
+    )
+
 
     resultados = query.all()
 
-    print("PRODUCOES:", producoes)
+
+    print("RESULTADOS:", resultados)
+    if not resultados:
+     return {"erro": True}
+
 
     return {
-        "modelos": [r.modelo for r in resultados],
-        "quantidades": [int(r.total_pecas or 0) for r in resultados],
-        "valores": [float(r.valor_total or 0) for r in resultados],
-    }
-
+    "dados": [
+    {
+    "modelo": r.modelo,
+  "funcao": r.funcao,
+"quantidade": int(r.total_pecas)
+}
+for r in resultados
+]
+}
 # ======================================================
 # RESPONDER FICHA (QR CODE)
 # ======================================================

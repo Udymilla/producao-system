@@ -3,87 +3,67 @@
 {% block page_title %}Consulta de Produção{% endblock %}
 {% set back_url = '/dashboard' %}
 
-{% block header_extra %}
-{% if perfil == 'admin' %}
-<a href="/modelos" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded">
-  💰 Painel de Valores
-</a>
-{% endif %}
-{% endblock %}
-
 {% block content %}
 <div class="bg-white rounded-lg shadow p-6">
 
   <!-- Filtro -->
-  <form id="filtroForm" class="grid md:grid-cols-4 gap-4 mb-6">
+  <div class="grid md:grid-cols-4 gap-4 mb-6">
     <div>
-      <label class="block text-sm font-medium text-gray-700">Operador</label>
-      <input type="text" id="operador" name="operador"
-             class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:ring-blue-300"
+      <label class="block text-sm font-medium">Operador</label>
+      <input type="text" id="operador"
+             class="w-full border rounded px-3 py-2"
              placeholder="Ex: Udymilla">
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-gray-700">Data Inicial</label>
-      <input type="date" id="data_inicio" name="data_inicio"
-             class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:ring-blue-300">
+      <label class="block text-sm font-medium">Data Inicial</label>
+      <input type="date" id="data_inicio"
+             class="w-full border rounded px-3 py-2">
     </div>
 
     <div>
-      <label class="block text-sm font-medium text-gray-700">Data Final</label>
-      <input type="date" id="data_fim" name="data_fim"
-             class="w-full border border-gray-300 rounded px-3 py-2 focus:ring focus:ring-blue-300">
+      <label class="block text-sm font-medium">Data Final</label>
+      <input type="date" id="data_fim"
+             class="w-full border rounded px-3 py-2">
     </div>
 
-    <div class="flex items-end justify-end gap-2">
-      <button type="button" id="pesquisar"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">
+    <div class="flex items-end">
+      <button id="pesquisar"
+              class="bg-blue-600 text-white px-4 py-2 rounded">
         🔍 Pesquisar
       </button>
-      <button type="button" id="btnPDF"
-              class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition">
-        📄 Gerar PDF
-      </button>
     </div>
-  </form>
+  </div>
 
   <!-- Mensagem -->
-  <div id="mensagem" class="hidden mb-4 p-4 rounded text-center font-medium"></div>
+  <div id="mensagem" class="hidden mb-4 p-4 rounded text-center"></div>
 
   <!-- Resultados -->
   <div id="resultado" class="hidden">
-    <table class="w-full border-collapse border border-gray-300 rounded-lg overflow-hidden">
-      <thead class="bg-blue-700 text-white">
+    <table class="w-full border">
+      <thead class="bg-blue-600 text-white">
         <tr>
-          <th class="px-4 py-2 text-left">Nº Ficha</th>
-          <th class="px-4 py-2 text-left">Modelo</th>
-          <th class="px-4 py-2 text-left">Total Peças</th>
-          <th class="px-4 py-2 text-left">Valor Total (R$)</th>
+          <th class="p-2">Modelo</th>
+          <th class="p-2">Total Peças</th>
         </tr>
       </thead>
-      <tbody id="tabelaResultados" class="divide-y divide-gray-200"></tbody>
+      <tbody id="tabelaResultados"></tbody>
     </table>
 
-    <h3 class="text-lg font-semibold text-gray-700 mt-8 mb-2">
-      Produção por Modelo
-    </h3>
-    <canvas id="graficoProducao" height="100"></canvas>
+    <canvas id="graficoProducao" class="mt-6"></canvas>
   </div>
 </div>
 
-<!-- Bibliotecas -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   const btnPesquisar = document.getElementById("pesquisar");
   const tabelaResultados = document.getElementById("tabelaResultados");
   const graficoCanvas = document.getElementById("graficoProducao");
-  const btnPDF = document.getElementById("btnPDF");
   const mensagem = document.getElementById("mensagem");
   const resultado = document.getElementById("resultado");
+
   let grafico = null;
 
   btnPesquisar.addEventListener("click", async () => {
@@ -91,82 +71,59 @@ document.addEventListener("DOMContentLoaded", () => {
     const data_inicial = document.getElementById("data_inicio").value;
     const data_final = document.getElementById("data_fim").value;
 
-    try {
-      const formData = new FormData();
-      formData.append("operador", operador);
-      formData.append("data_inicial", data_inicial);
-      formData.append("data_final", data_final);
-
-      const resp = await fetch("/consultar_producao_dados", {
-        method: "POST",
-        body: formData
-      });
-
-      const data = await resp.json();
-
-      mensagem.classList.add("hidden");
-      resultado.classList.add("hidden");
-
-      if (data.erro || !data.modelos || data.modelos.length === 0) {
-        mensagem.textContent = "Nenhum resultado encontrado para os filtros informados.";
-        mensagem.className = "mb-4 p-4 rounded text-center font-medium bg-yellow-100 text-yellow-800";
-        mensagem.classList.remove("hidden");
-        return;
-      }
-
-      resultado.classList.remove("hidden");
-
-      tabelaResultados.innerHTML = data.modelos.map((modelo, i) => `
-        <tr class="hover:bg-gray-50">
-          <td class="px-4 py-2">${data.fichas[i] || '-'}</td>
-          <td class="px-4 py-2">${modelo}</td>
-          <td class="px-4 py-2">${data.quantidades[i]}</td>
-          <td class="px-4 py-2">R$ ${data.valores[i].toFixed(2)}</td>
-        </tr>
-      `).join("");
-
-      if (grafico) grafico.destroy();
-      grafico = new Chart(graficoCanvas, {
-        type: "bar",
-        data: {
-          labels: data.modelos,
-          datasets: [{
-            label: "Total de Peças",
-            data: data.quantidades,
-            backgroundColor: "#2563eb"
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true } }
-        }
-      });
-
-    } catch (err) {
-      console.error(err);
-      mensagem.textContent = "Erro ao carregar dados de produção.";
-      mensagem.className = "mb-4 p-4 rounded text-center font-medium bg-red-100 text-red-700";
+    if (!operador) {
+      mensagem.textContent = "Informe o operador.";
+      mensagem.className = "mb-4 p-4 bg-yellow-100 text-yellow-800";
       mensagem.classList.remove("hidden");
+      return;
     }
-  });
 
-  btnPDF.addEventListener("click", async () => {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF("p", "mm", "a4");
-    const content = document.querySelector("main");
+    const formData = new FormData();
+    formData.append("operador", operador);
+    formData.append("data_inicial", data_inicial);
+    formData.append("data_final", data_final);
 
-    const canvas = await html2canvas(content, { scale: 2 });
-    const imgData = canvas.toDataURL("image/png");
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    const resp = await fetch("/consultar_producao_dados", {
+      method: "POST",
+      body: formData
+    });
 
-    pdf.text("Relatório de Produção", 10, 10);
-    pdf.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 10, 16);
-    pdf.addImage(imgData, "PNG", 0, 20, pdfWidth, pdfHeight - 20);
+    const data = await resp.json();
 
-    const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-    pdf.save(`Consulta_Producao_${dataAtual}.pdf`);
+    mensagem.classList.add("hidden");
+    resultado.classList.add("hidden");
+
+    if (data.erro) {
+      mensagem.textContent = "Nenhum resultado encontrado.";
+      mensagem.className = "mb-4 p-4 bg-yellow-100 text-yellow-800";
+      mensagem.classList.remove("hidden");
+      return;
+    }
+
+    resultado.classList.remove("hidden");
+
+    tabelaResultados.innerHTML = data.modelos.map((m, i) => `
+      <tr>
+        <td class="p-2">${m}</td>
+        <td class="p-2">${data.quantidades[i]}</td>
+      </tr>
+    `).join("");
+
+    if (grafico) grafico.destroy();
+
+    grafico = new Chart(graficoCanvas, {
+      type: "bar",
+      data: {
+        labels: data.modelos,
+        datasets: [{
+          data: data.quantidades,
+          backgroundColor: "#2563eb"
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } }
+      }
+    });
   });
 });
 </script>
