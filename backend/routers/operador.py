@@ -107,13 +107,12 @@ async def consultar_fichas_page(request: Request):
         "consultar_fichas.html",
         {"request": request}
     )
-
 # ======================================================
 # CONSULTAR PRODUÇÃO (TELA)
 # ======================================================
 
 @router.get("/consultar_producao", response_class=HTMLResponse)
-@login_required
+#@login_required
 async def consultar_producao_page(
     request: Request,
     db: Session = Depends(get_db)
@@ -140,71 +139,103 @@ async def consultar_producao_page(
             "modelos": [m[0] for m in modelos],
         }
     )
-
 # ======================================================
 # CONSULTAR PRODUÇÃO (DADOS)
 # ======================================================
 
-    @router.post("/consultar_producao_dados")
-    async def consultar_producao_dados(
+@router.post("/consultar_producao_dados")
+#@login_required
+async def consultar_producao_dados(
     operador: str = Form(...),
     data_inicial: str = Form(None),
     data_final: str = Form(None),
     db: Session = Depends(get_db)
-    ):
- 
-     print("FILTROS:", operador, data_inicial, data_final)
-
-
-     query = (
-    db.query(
-    Formulario.nome_modelo.label("modelo"),
-    Funcao.nome.label("funcao"),
-    func.sum(Producao.quantidade).label("total_pecas")
+):
+    query = (
+        db.query(
+            Ficha.numero_ficha.label("numero_ficha"),
+            Formulario.nome_modelo.label("modelo"),
+            Funcao.nome.label("funcao"),
+            func.sum(Producao.quantidade).label("quantidade")
+        )
+        .join(Producao, Producao.ficha_id == Ficha.id)
+        .join(Ficha.formulario)
+        .join(Funcao, Funcao.id == Producao.funcao_id)
+        .filter(func.lower(Producao.operador) == operador.strip().lower())
+        .group_by(
+            Ficha.numero_ficha,
+            Formulario.nome_modelo,
+            Funcao.nome
+        )
+        .order_by(Ficha.numero_ficha)
     )
-    .join(Formulario, Formulario.id == Producao.formulario_id)
-    .join(Funcao, Funcao.id == Producao.funcao_id)
-     .filter(Producao.operador == operador)
-    )
-
 
     if data_inicial:
-     query = query.filter(
-    Producao.criado_em >= datetime.strptime(data_inicial, "%Y-%m-%d")
-    )
-
+        query = query.filter(
+            Producao.criado_em >= datetime.strptime(data_inicial, "%Y-%m-%d")
+        )
 
     if data_final:
-     query = query.filter(
-    Producao.criado_em <= datetime.strptime(data_final, "%Y-%m-%d")
-    )  
-
-
-     query = (
-     query
-    .group_by(Formulario.nome_modelo, Funcao.nome)
-    .order_by(Formulario.nome_modelo, Funcao.nome)
-    )
-
+        query = query.filter(
+            Producao.criado_em <= datetime.strptime(data_final, "%Y-%m-%d")
+        )
 
     resultados = query.all()
 
+    return {
+        "dados": [
+            {
+                "numero_ficha": r.numero_ficha,
+                "modelo": r.modelo,
+                "funcao": r.funcao,
+                "quantidade": int(r.quantidade)
+            }
+            for r in resultados
+        ]
+    }
 
-    print("RESULTADOS:", resultados)
-    if not resultados:
-     return {"erro": True}
+@router.post("/consultar_fichas_dados")
+#@login_required
+async def consultar_fichas_dados(
+    numero_ficha: str = Form(None),
+    modelo: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    query = (
+        db.query(
+            Ficha.numero_ficha.label("numero_ficha"),
+            Formulario.nome_modelo.label("modelo"),
+            Ficha.quantidade_total.label("quantidade_ficha"),
+            Producao.operador.label("operador"),
+            Funcao.nome.label("funcao")
+        )
+        .join(Ficha.formulario)
+        .outerjoin(Producao, Producao.ficha_id == Ficha.id)
+        .outerjoin(Funcao, Funcao.id == Producao.funcao_id)
+        .order_by(Ficha.numero_ficha)
+    )
 
+    if numero_ficha:
+        query = query.filter(Ficha.numero_ficha == numero_ficha)
+
+    if modelo:
+        query = query.filter(Formulario.nome_modelo.ilike(f"%{modelo}%"))
+
+    resultados = query.all()
 
     return {
-    "dados": [
-    {
-    "modelo": r.modelo,
-  "funcao": r.funcao,
-"quantidade": int(r.total_pecas)
-}
-for r in resultados
-]
-}
+        "dados": [
+            {
+                "numero_ficha": r.numero_ficha,
+                "modelo": r.modelo,
+                "quantidade_ficha": int(r.quantidade_ficha),
+                "operador": r.operador or "-",
+                "funcao": r.funcao or "-",
+                "status": "CONCLUÍDA" if r.operador else "EM ANDAMENTO"
+            }
+            for r in resultados
+        ]
+    }
 # ======================================================
 # RESPONDER FICHA (QR CODE)
 # ======================================================
@@ -273,3 +304,7 @@ async def responder_ficha_post(
 
     return RedirectResponse("/dashboard", status_code=303)
 
+    print("ficha_id:", ficha_id)
+    print("operador:", operador)
+    print("funcao_id:", funcao_id)
+    print("quantidade herdada:", ficha.quantidade_total)

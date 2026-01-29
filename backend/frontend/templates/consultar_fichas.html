@@ -1,68 +1,109 @@
 {% extends "base.html" %}
+
 {% block title %}Consultar Fichas{% endblock %}
-{% block page_title %}Consultar Fichas{% endblock %}
+{% block page_title %}Consulta de Fichas{% endblock %}
 {% set back_url = '/dashboard' %}
 
 {% block content %}
-<div class="flex flex-col items-center justify-center min-h-[80vh] p-6">
+<div class="bg-white rounded-lg shadow p-6">
 
-    <h1 class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-6">
-        Consulta de Fichas
-    </h1>
+  <!-- FILTRO -->
+  <div class="flex flex-col sm:flex-row gap-4 mb-6">
+    <input
+      id="filtro"
+      class="flex-1 border px-3 py-2 rounded"
+      placeholder="Buscar por número da ficha ou modelo">
 
-    {% if mensagem %}
-    <div class="mb-4 p-4 bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200 rounded text-center">
-        {{ mensagem | safe }}
-    </div>
-    {% endif %}
+    <button
+      id="pesquisar"
+      type="button"
+      class="bg-blue-600 text-white px-4 py-2 rounded">
+      🔍 Pesquisar
+    </button>
+  </div>
 
-    <div class="w-full max-w-4xl bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-        <form method="get" action="/consultar_fichas" class="flex flex-col sm:flex-row gap-4 mb-6">
-            <input type="text" name="filtro" placeholder="Buscar por número ou modelo"
-                   class="flex-1 p-2 rounded border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+  <!-- MENSAGEM -->
+  <div
+    id="mensagem"
+    class="hidden mb-4 p-4 rounded text-center bg-yellow-100 text-yellow-800">
+  </div>
 
-            <button type="submit"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded shadow transition">
-                🔍 Buscar
-            </button>
-        </form>
+  <!-- TABELA -->
+  <div class="overflow-x-auto">
+    <table class="w-full border notranslate">
+      <thead class="bg-blue-600 text-white notranslate">
+  <tr>
+    <th class="p-2 text-left">Ficha</th>
+    <th class="p-2 text-left">Modelo</th>
+    <th class="p-2 text-center">Qtd Ficha</th>
+    <th class="p-2 text-left">Operador</th>
+    <th class="p-2 text-left">Função</th>
+    <th class="p-2 text-center">Status</th>
+  </tr>
+</thead>
+      <tbody id="tabela"></tbody>
+    </table>
+  </div>
 
-        {% if fichas %}
-        <div class="overflow-x-auto">
-            <table class="min-w-full border border-gray-300 dark:border-gray-700 rounded overflow-hidden">
-                <thead class="bg-blue-100 dark:bg-blue-800 text-gray-900 dark:text-gray-100">
-                    <tr>
-                        <th class="px-4 py-2 text-left">Número</th>
-                        <th class="px-4 py-2 text-left">Modelo</th>
-                        <th class="px-4 py-2 text-left">Função</th>
-                        <th class="px-4 py-2 text-left">Quantidade</th>
-                        <th class="px-4 py-2 text-left">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white dark:bg-gray-900">
-                    {% for ficha in fichas %}
-                    <tr class="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <td class="px-4 py-2">{{ ficha.numero_ficha }}</td>
-                        <td class="px-4 py-2">{{ ficha.modelo }}</td>
-                        <td class="px-4 py-2">{{ ficha.funcao }}</td>
-                        <td class="px-4 py-2">{{ ficha.quantidade_total }}</td>
-                        <td class="px-4 py-2">
-                            {% if ficha.status == "em_producao" %}
-                            <span class="text-yellow-600 font-semibold">🟡 Em Produção</span>
-                            {% elif ficha.status == "em_estoque" %}
-                            <span class="text-blue-600 font-semibold">🔵 Em Estoque</span>
-                            {% else %}
-                            <span class="text-green-600 font-semibold">🟢 Finalizada</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <p class="text-center text-gray-600 dark:text-gray-300 mt-4">Nenhuma ficha encontrada.</p>
-        {% endif %}
-    </div>
 </div>
+
+<script>
+document.getElementById("pesquisar").addEventListener("click", async () => {
+
+  const filtro = document.getElementById("filtro").value.trim();
+  const mensagem = document.getElementById("mensagem");
+  const tbody = document.getElementById("tabela");
+
+  mensagem.classList.add("hidden");
+  tbody.innerHTML = "";
+
+  if (!filtro) {
+    mensagem.textContent = "Informe um número de ficha ou modelo.";
+    mensagem.classList.remove("hidden");
+    return;
+  }
+
+  const formData = new FormData();
+
+  if (!isNaN(filtro)) {
+    formData.append("numero_ficha", filtro);
+  } else {
+    formData.append("modelo", filtro);
+  }
+
+  const resp = await fetch("/consultar_fichas_dados", {
+    method: "POST",
+    body: formData,
+    credentials: "same-origin"
+  });
+
+  if (!resp.ok) {
+    mensagem.textContent = "Erro ao consultar fichas.";
+    mensagem.classList.remove("hidden");
+    return;
+  }
+
+  const data = await resp.json();
+
+  if (!data.dados || data.dados.length === 0) {
+    mensagem.textContent = "Nenhuma ficha encontrada.";
+    mensagem.classList.remove("hidden");
+    return;
+  }
+
+tbody.innerHTML = data.dados.map(d => `
+  <tr class="border-b hover:bg-gray-100">
+    <td class="p-2 text-left">${d.numero_ficha}</td>
+    <td class="p-2 text-left">${d.modelo}</td>
+    <td class="p-2 text-center">${d.quantidade_ficha}</td>
+    <td class="p-2 text-left">${d.operador}</td>
+    <td class="p-2 text-left">${d.funcao}</td>
+    <td class="p-2 text-center font-semibold text-green-600">
+      ${d.status}
+    </td>
+  </tr>
+`).join("");
+});
+</script>
+
 {% endblock %}
