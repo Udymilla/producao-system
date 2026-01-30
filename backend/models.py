@@ -50,6 +50,9 @@ class UsuarioOperacional(Base):
 
     id = Column(Integer, primary_key=True)
     nome = Column(String, nullable=False)
+    senha = Column(String, nullable=False)
+    ativo = Column(Integer, default=1)   # 👈 inteiro
+    tipo = Column(String)
 
 # ==========================================================
 # 🔹 FORMULÁRIOS / MODELOS

@@ -14,23 +14,28 @@
     </h2>
 
     <div class="mb-4">
-      <label for="operador" class="block text-sm font-medium mb-1 text-gray-700">Operador:</label>
-<select name="operador" id="operador" class="w-full border rounded-md px-2 py-1 shadow-sm focus:ring-blue-500 focus:border-blue-500">
-  <option value="">Selecione o operador</option>
+      <label class="block text-sm font-medium text-gray-700">Operador:</label>
+<select name="operador" required
+        class="w-full border border-gray-300 rounded px-3 py-2">
+  <option value="">Operador</option>
   {% for op in operadores %}
-    <option value="{{ op.nome }}">{{ op.nome }}</option>
+    <option value="{{ op.nome }}">
+      {{ op.nome }}
+    </option>
+
   {% endfor %}
 </select>
+
 
     </div>
 
     <div class="mb-4">
       <label for="modelo" class="block text-sm font-medium mb-1 text-gray-700">Modelo:</label>
-<select name="modelo" required
+<select name="formulario_id" required
         class="w-full border rounded px-3 py-2">
   <option value="">Selecione o modelo</option>
   {% for m in modelos %}
-    <option value="{{ m.nome_modelo }}">{{ m.nome_modelo }}</option>
+    <option value="{{ m.id }}">{{ m.nome_modelo }}</option>
   {% endfor %}
 </select>
 
@@ -107,4 +112,6 @@
     </button>
   </form>
 </div>
+
+
 {% endblock %}

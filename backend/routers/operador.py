@@ -34,12 +34,20 @@ async def dashboard(request: Request):
 # LANÇAR PRODUÇÃO (TELA)
 # ======================================================
 
-@router.get("/lancar", response_class=HTMLResponse)
-@login_required
-async def lancar_page(
+@router.get("/lancar")
+async def lancar_producao(
     request: Request,
     db: Session = Depends(get_db)
 ):
+    # 👤 Operadores
+    operadores = (
+        db.query(UsuarioOperacional)
+        .filter(UsuarioOperacional.ativo == 1)
+        .order_by(UsuarioOperacional.nome)
+        .all()
+    )
+
+    # 📦 MODELOS (EXATAMENTE IGUAL AO gerar_fichas)
     modelos = (
         db.query(Formulario)
         .filter(Formulario.ativo == True)
@@ -47,17 +55,27 @@ async def lancar_page(
         .all()
     )
 
+    # 🧩 Funções (variável, como você explicou)
+    funcoes = (
+        db.query(Funcao)
+        .order_by(Funcao.nome)
+        .all()
+    )
+
+    # DEBUG
+    print("OPERADORES:", [(o.id, o.nome) for o in operadores])
+    print("MODELOS:", [(m.id, m.nome_modelo) for m in modelos])
+    print("FUNCOES:", [(f.id, f.nome) for f in funcoes])
+
     return templates.TemplateResponse(
         "lancar.html",
         {
             "request": request,
-            "modelos": modelos
+            "operadores": operadores,
+            "modelos": modelos,
+            "funcoes": funcoes
         }
-
-    
-
     )
-
 # ======================================================
 # LANÇAR PRODUÇÃO (POST)
 # ======================================================
