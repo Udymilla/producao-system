@@ -89,18 +89,16 @@ async def lancar_post(
     form = await request.form()
 
     operador = form.get("operador")
-    modelo = form.get("modelo")
-    funcao = form.get("funcao")
+    modelo = form.get("modelo")     # usado só para exibição
+    funcao = form.get("funcao")     # usado depois para cálculo
     quantidade = int(form.get("quantidade"))
 
     producao = Producao(
         operador=operador,
-        modelo=modelo,
-        servico=funcao,
         quantidade=quantidade,
-        valor=0.0,
         criado_em=datetime.utcnow()
     )
+
 
     db.add(producao)
     db.commit()
@@ -110,7 +108,10 @@ async def lancar_post(
         {
             "request": request,
             "titulo": "Produção lançada ✅",
-            "mensagem": f"{quantidade} peças do modelo {modelo} lançadas para {operador}"
+            "mensagem": (
+                f"{quantidade} peças do modelo {modelo} "
+                f"({funcao}) lançadas para {operador}"
+            )
         }
     )
 
@@ -328,7 +329,7 @@ async def responder_ficha_post(
         raise HTTPException(status_code=404, detail="Ficha não encontrada")
 
     producao = Producao(
-    ficha_id=ficha.id,
+    ficha_id=ficha_id,
     operador=operador,
     funcao_id=funcao_id,
     quantidade=ficha.quantidade_total,
