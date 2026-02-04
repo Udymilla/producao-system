@@ -35,6 +35,20 @@
     </div>
   </div>
 
+  <form method="get" action="/consultar_producao/pdf" class="inline">
+  <input type="hidden" name="operador" value="{{ operador }}">
+  <input type="hidden" name="data_inicial" value="{{ data_inicial }}">
+  <input type="hidden" name="data_final" value="{{ data_final }}">
+
+  <button
+    type="submit"
+    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded ml-2"
+  >
+    📄 Gerar PDF
+  </button>
+</form>
+
+
   <!-- MENSAGEM -->
   <div id="mensagem" class="hidden mb-4 p-4 rounded text-center"></div>
 

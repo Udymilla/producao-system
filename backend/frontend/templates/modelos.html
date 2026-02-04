@@ -1,185 +1,85 @@
 {% extends "base.html" %}
 {% block title %}Modelos e Valores{% endblock %}
 {% block page_title %}Modelos e Valores{% endblock %}
-{% set back_url = '/consultar_producao' %}
-{% block header_extra %}
-<a href="/dashboard" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded">
-    🏠 Pagina Inicial
-</a>
-{% endblock %}
+{% set back_url = '/dashboard' %}
 
 {% block content %}
-  <main class="container mx-auto px-6 py-10 space-y-12">
-    <!-- =============================================== -->
-    <!-- CADASTRAR MODELO -->
-    <!-- =============================================== -->
-    <section class="bg-white shadow-md rounded-2xl p-8">
-      <h2 class="text-xl font-bold text-gray-800 mb-4">📘 Cadastrar Novo Modelo</h2>
-      <form action="/modelos/add" method="post" class="flex gap-4">
-        <input
-          type="text"
-          name="nome_modelo"
-          placeholder="Nome do modelo"
-          required
-          class="flex-1 border rounded-lg px-4 py-2 focus:ring focus:ring-blue-200"
-        />
-        <button
-          type="submit"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
-        >
-          Salvar Modelo
-        </button>
-      </form>
+<main class="container mx-auto px-6 py-10 space-y-10">
 
-      <!-- Lista de modelos cadastrados -->
-      <div class="mt-6">
-        <h3 class="text-lg font-semibold text-gray-700 mb-2">Modelos Cadastrados</h3>
-        {% if modelos %}
-          <ul class="grid md:grid-cols-3 gap-2">
-            {% for m in modelos %}
-              <li class="bg-gray-100 px-4 py-2 rounded">{{ m.nome_modelo }}</li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="text-gray-500 italic">Nenhum modelo cadastrado ainda.</p>
-        {% endif %}
-      </div>
-    </section>
+<!-- ===================== -->
+<!-- CADASTRAR VALOR -->
+<!-- ===================== -->
+<section class="bg-white shadow rounded-xl p-6">
+  <h2 class="text-lg font-bold mb-4">💰 Cadastrar / Editar Valor</h2>
 
-    <!-- =============================================== -->
-    <!-- CADASTRAR / EDITAR VALORES -->
-    <!-- =============================================== -->
-    <section class="bg-white shadow-md rounded-2xl p-8">
-      <h2 class="text-xl font-bold text-gray-800 mb-4">💰 Cadastrar ou Editar Valor</h2>
+  <form method="post" action="/modelos/add_valor"
+        class="grid md:grid-cols-3 gap-4">
 
-      <form id="valorForm" method="post" action="/modelos/add_valor" class="grid md:grid-cols-4 gap-4">
-        <input type="hidden" name="id" id="valor_id" value="">
+    <div>
+      <label>Modelo</label>
+      <select name="modelo_id" required class="w-full border rounded px-3 py-2">
+        <option value="">Selecione</option>
+        {% for m in modelos %}
+          <option value="{{ m.id }}">{{ m.nome_modelo }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Modelo</label>
-          <select name="modelo_id" id="modelo_id" required
-             class="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200">
-            <option value="">Selecione um modelo</option>
-            {% for m in modelos %}
-            <option value="{{ m.id }}">{{ m.nome_modelo }}</option>
-             {% endfor %}
-          </select>
-        </div>
+    <div>
+      <label>Função</label>
+      <select name="funcao_id" required class="w-full border rounded px-3 py-2">
+        <option value="">Selecione</option>
+        {% for f in funcoes %}
+          <option value="{{ f.id }}">{{ f.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Função</label>
-          <input
-            type="text"
-            name="funcao"
-            id="funcao"
-            placeholder="Ex: costura, acabamento"
-            required
-            class="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200"
-          />
-        </div>
+    <div>
+      <label>Valor (R$)</label>
+      <input type="number" step="0.01" name="valor"
+             required class="w-full border rounded px-3 py-2">
+    </div>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Valor Unitário (R$)</label>
-          <input
-            type="number"
-            step="0.01"
-            name="valor_unitario"
-            id="valor_unitario"
-            required
-            class="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200"
-          />
-        </div>
+    <div class="md:col-span-3">
+      <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">
+        Salvar Valor
+      </button>
+    </div>
+  </form>
+</section>
 
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Tamanho (opcional)</label>
-          <input
-            type="text"
-            name="tamanho"
-            id="tamanho"
-            placeholder="Ex: G, M, PP"
-            class="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200"
-          />
-        </div>
+<!-- ===================== -->
+<!-- TABELA DE VALORES -->
+<!-- ===================== -->
+<section class="bg-white shadow rounded-xl p-6">
+  <h2 class="text-lg font-bold mb-4">📊 Valores Cadastrados</h2>
 
-        <div class="md:col-span-4 flex gap-4">
-          <button
-            type="submit"
-            id="salvarBtn"
-            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition"
-          >
-            Salvar Valor
-          </button>
+  <table class="w-full border text-sm">
+    <thead class="bg-blue-700 text-white">
+      <tr>
+        <th class="p-2">Modelo</th>
+        <th class="p-2">Função</th>
+        <th class="p-2">Valor (R$)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in valores %}
+      <tr class="border-b hover:bg-gray-50">
+        <td class="p-2">{{ v.formulario.nome_modelo }}</td>
+        <td class="p-2">{{ v.funcao.nome }}</td>
+        <td class="p-2">R$ {{ "%.2f"|format(v.valor) }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="3" class="text-center text-gray-500 py-4">
+          Nenhum valor cadastrado.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
 
-          <button
-            type="button"
-            id="cancelarBtn"
-            class="hidden bg-gray-400 hover:bg-gray-500 text-white px-6 py-2 rounded-lg transition"
-            onclick="cancelarEdicao()"
-          >
-            Cancelar
-          </button>
-        </div>
-      </form>
-
-      <!-- Tabela de valores -->
-      <div class="mt-8 overflow-x-auto">
-        <table class="w-full border-collapse border border-gray-300 text-sm text-left">
-          <thead class="bg-blue-700 text-white">
-            <tr>
-              <th class="px-4 py-2">Modelo</th>
-              <th class="px-4 py-2">Função</th>
-              <th class="px-4 py-2">Valor Unitário</th>
-              <th class="px-4 py-2">Tamanho</th>
-              <th class="px-4 py-2 text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for v in valores %}
-            <tr class="border-b hover:bg-gray-50">
-              <td class="px-4 py-2">{{ v.modelo_ref.nome_modelo }}</td>
-              <td class="px-4 py-2">{{ v.funcao }}</td>
-              <td class="px-4 py-2">R$ {{ "%.2f"|format(v.valor_unitario) }}</td>
-              <td class="px-4 py-2">{{ v.tamanho or "-" }}</td>
-              <td class="px-4 py-2 text-center space-x-2">
-              <script>
-                function editarValor(botao) {
-                document.getElementById("valor_id").value = botao.dataset.id;
-                document.getElementById("modelo_id").value = botao.dataset.modelo;
-                document.getElementById("funcao").value = botao.dataset.funcao;
-                document.getElementById("valor_unitario").value = botao.dataset.valor;
-                document.getElementById("tamanho").value = botao.dataset.tamanho;
-
-                document.getElementById("formValor").action = "/modelos/editar_inline";
-                document.getElementById("valor_unitario").focus();
-              }
-              </script>
-                <a href="/modelos/excluir/{{ v.id }}" class="text-red-600 hover:underline">Excluir</a>
-              </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="5" class="text-center text-gray-500 py-3">Nenhum valor cadastrado.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-</div>
-
-<script>
-function editarValor(id, modelo_id, funcao, valor, tamanho) {
-  // Preenche o formulário de edição com os dados do item
-  document.getElementById("valor_id").value = id;
-  document.getElementById("modelo_id").value = modelo_id;
-  document.getElementById("funcao").value = funcao;
-  document.getElementById("valor_unitario").value = valor;
-  document.getElementById("tamanho").value = tamanho;
-
-  // Altera a ação do formulário para o endpoint de edição
-  document.getElementById("formValor").action = "/modelos/editar_inline";
-
-  // Foca no campo de valor para edição imediata
-  document.getElementById("valor_unitario").focus();
-}
-</script>
+</main>
 {% endblock %}

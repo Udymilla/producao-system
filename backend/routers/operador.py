@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from datetime import datetime
 
 from backend.utils import templates
@@ -162,54 +162,71 @@ async def consultar_producao_page(
 # ======================================================
 
 @router.post("/consultar_producao_dados")
-#@login_required
 async def consultar_producao_dados(
     operador: str = Form(...),
     data_inicial: str = Form(None),
     data_final: str = Form(None),
     db: Session = Depends(get_db)
 ):
+    # ============================
+    # QUERY COM VALOR
+    # ============================
     query = (
         db.query(
-            Ficha.numero_ficha.label("numero_ficha"),
             Formulario.nome_modelo.label("modelo"),
             Funcao.nome.label("funcao"),
-            func.sum(Producao.quantidade).label("quantidade")
+            func.sum(Producao.quantidade).label("total_pecas"),
+            ValorModelo.valor.label("valor_unitario"),
+            (
+                func.sum(Producao.quantidade) * ValorModelo.valor
+            ).label("valor_total")
         )
-        .join(Producao, Producao.ficha_id == Ficha.id)
-        .join(Ficha.formulario)
+        .join(Ficha, Ficha.id == Producao.ficha_id)
+        .join(Formulario, Formulario.id == Ficha.formulario_id)
         .join(Funcao, Funcao.id == Producao.funcao_id)
-        .filter(func.lower(Producao.operador) == operador.strip().lower())
-        .group_by(
-            Ficha.numero_ficha,
-            Formulario.nome_modelo,
-            Funcao.nome
+        .join(
+            ValorModelo,
+            and_(
+                ValorModelo.modelo_id == Formulario.id,
+                ValorModelo.funcao_id == Funcao.id
+            )
         )
-        .order_by(Ficha.numero_ficha)
+        .filter(Producao.operador == operador)
+        .group_by(
+            Formulario.nome_modelo,
+            Funcao.nome,
+            ValorModelo.valor
+        )
+        .order_by(Formulario.nome_modelo, Funcao.nome)
     )
 
+    # ============================
+    # FILTROS DE DATA (opcional)
+    # ============================
     if data_inicial:
         query = query.filter(
-            Producao.criado_em >= datetime.strptime(data_inicial, "%Y-%m-%d")
+            Producao.criado_em >= datetime.fromisoformat(data_inicial)
         )
 
     if data_final:
         query = query.filter(
-            Producao.criado_em <= datetime.strptime(data_final, "%Y-%m-%d")
+            Producao.criado_em <= datetime.fromisoformat(data_final)
         )
 
     resultados = query.all()
 
+    if not resultados:
+        return {"erro": True}
+
+    # ============================
+    # RETORNO PARA O FRONT
+    # ============================
     return {
-        "dados": [
-            {
-                "numero_ficha": r.numero_ficha,
-                "modelo": r.modelo,
-                "funcao": r.funcao,
-                "quantidade": int(r.quantidade)
-            }
-            for r in resultados
-        ]
+        "modelos": [r.modelo for r in resultados],
+        "funcoes": [r.funcao for r in resultados],
+        "quantidades": [int(r.total_pecas) for r in resultados],
+        "valores_unitarios": [float(r.valor_unitario) for r in resultados],
+        "valores_totais": [float(r.valor_total) for r in resultados],
     }
 
 @router.post("/consultar_fichas_dados")
