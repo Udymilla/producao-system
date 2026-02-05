@@ -42,13 +42,16 @@
     </div>
 
     <div class="mb-4">
-      <label class="block text-gray-700 font-medium mb-1">Função:</label>
-  <select name="ficha_id" required>
-  <option value="">Selecione a ficha</option>
-  {% for f in fichas %}
-    <option value="{{ f.id }}">
-      {{ f.numero_ficha }} - {{ f.formulario.nome_modelo }}
-    </option>
+      <label class="block text-sm font-medium text-gray-600 mb-1">
+  Função
+</label>
+
+<select name="funcao_id" required
+  class="w-full border rounded-lg px-3 py-2 focus:ring focus:ring-blue-200">
+  <option value="">Selecione a função</option>
+
+  {% for f in funcoes %}
+    <option value="{{ f.id }}">{{ f.nome }}</option>
   {% endfor %}
 </select>
 

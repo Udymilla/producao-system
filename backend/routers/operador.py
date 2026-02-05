@@ -88,15 +88,32 @@ async def lancar_post(
     form = await request.form()
 
     operador = form.get("operador")
-    modelo = form.get("modelo")  # só para exibição
-    funcao_id = int(form.get("funcao_id"))
-    quantidade = int(form.get("quantidade"))
-    Ficha_id = int(form.get("ficha_id"))
+    formulario_id = form.get("formulario_id")   # ✅ vem do select
+    funcao_id = form.get("funcao_id")           # ✅ vem do select
+    quantidade = form.get("quantidade")
+
+    if not operador or not formulario_id or not funcao_id or not quantidade:
+        raise HTTPException(status_code=400, detail="Dados incompletos")
+
+    formulario_id = int(formulario_id)
+    funcao_id = int(funcao_id)
+    quantidade = int(quantidade)
+
+    # 🔹 BUSCA A FICHA CORRETA DO MODELO
+    ficha = (
+        db.query(Ficha)
+        .filter(Ficha.formulario_id == formulario_id)
+        .order_by(Ficha.id.desc())
+        .first()
+    )
+
+    if not ficha:
+        raise HTTPException(status_code=400, detail="Nenhuma ficha encontrada para o modelo")
 
     producao = Producao(
+        ficha_id=ficha.id,
         operador=operador,
-        ficha_id=int(Ficha_id),
-        funcao_id=funcao_id,     
+        funcao_id=funcao_id,
         quantidade=quantidade,
         criado_em=datetime.utcnow()
     )
@@ -109,10 +126,7 @@ async def lancar_post(
         {
             "request": request,
             "titulo": "Produção lançada ✅",
-            "mensagem": (
-                f"{quantidade} peças do modelo {modelo} "
-                f"lançadas para {operador}"
-            )
+            "mensagem": f"{quantidade} peças lançadas para {operador}"
         }
     )
 
@@ -170,34 +184,33 @@ async def consultar_producao_dados(
     db: Session = Depends(get_db)
 ):
     query = (
-        db.query(
-            Formulario.nome_modelo.label("modelo"),
-            Funcao.nome.label("funcao"),
-            func.sum(Producao.quantidade).label("total_pecas"),
-            func.coalesce(ValorModelo.valor, 0).label("valor_unitario"),
-            (
-                func.sum(Producao.quantidade) *
-                func.coalesce(ValorModelo.valor, 0)
-            ).label("valor_total")
-        )
-        .join(Ficha, Ficha.id == Producao.ficha_id)
-        .join(Formulario, Formulario.id == Ficha.formulario_id)
-        .join(Funcao, Funcao.id == Producao.funcao_id)
-        .outerjoin(
-            ValorModelo,
-            and_(
-                ValorModelo.modelo_id == Formulario.id,
-                ValorModelo.funcao_id == Funcao.id
-            )
-        )
-        .filter(Producao.operador == operador)
-        .group_by(
-            Formulario.nome_modelo,
-            Funcao.nome,
-            ValorModelo.valor
-        )
-        .order_by(Formulario.nome_modelo, Funcao.nome)
+    db.query(
+        Formulario.nome_modelo.label("modelo"),
+        Funcao.nome.label("funcao"),
+        func.sum(Producao.quantidade).label("total_pecas"),
+        ValorModelo.valor.label("valor_unitario"),
+        (
+            func.sum(Producao.quantidade) * func.coalesce(ValorModelo.valor, 0)
+        ).label("valor_total")
     )
+    .join(Ficha, Ficha.id == Producao.ficha_id)
+    .join(Formulario, Formulario.id == Ficha.formulario_id)
+    .outerjoin(Funcao, Funcao.id == Producao.funcao_id)
+    .outerjoin(
+        ValorModelo,
+        and_(
+            ValorModelo.modelo_id == Formulario.id,
+            ValorModelo.funcao_id == Producao.funcao_id
+        )
+    )
+    .filter(Producao.operador == operador)
+    .group_by(
+        Formulario.nome_modelo,
+        Funcao.nome,
+        ValorModelo.valor
+    )
+)
+
 
     def parse_data(data_str):
         if not data_str:
