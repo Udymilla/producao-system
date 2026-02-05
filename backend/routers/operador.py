@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from backend.utils import templates
 from backend.database import get_db
@@ -79,7 +79,6 @@ async def lancar_producao(
 # ======================================================
 # LANÇAR PRODUÇÃO (POST)
 # ======================================================
-
 @router.post("/lancar", response_class=HTMLResponse)
 @login_required
 async def lancar_post(
@@ -89,16 +88,18 @@ async def lancar_post(
     form = await request.form()
 
     operador = form.get("operador")
-    modelo = form.get("modelo")     # usado só para exibição
-    funcao = form.get("funcao")     # usado depois para cálculo
+    modelo = form.get("modelo")  # só para exibição
+    funcao_id = int(form.get("funcao_id"))
     quantidade = int(form.get("quantidade"))
+    Ficha_id = int(form.get("ficha_id"))
 
     producao = Producao(
         operador=operador,
+        ficha_id=int(Ficha_id),
+        funcao_id=funcao_id,     
         quantidade=quantidade,
         criado_em=datetime.utcnow()
     )
-
 
     db.add(producao)
     db.commit()
@@ -110,7 +111,7 @@ async def lancar_post(
             "titulo": "Produção lançada ✅",
             "mensagem": (
                 f"{quantidade} peças do modelo {modelo} "
-                f"({funcao}) lançadas para {operador}"
+                f"lançadas para {operador}"
             )
         }
     )
@@ -161,7 +162,6 @@ async def consultar_producao_page(
 # ======================================================
 # CONSULTAR PRODUÇÃO (DADOS)
 # ======================================================
-
 @router.post("/consultar_producao_dados")
 async def consultar_producao_dados(
     operador: str = Form(...),
@@ -169,23 +169,21 @@ async def consultar_producao_dados(
     data_final: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    # ============================
-    # QUERY COM VALOR
-    # ============================
     query = (
         db.query(
             Formulario.nome_modelo.label("modelo"),
             Funcao.nome.label("funcao"),
             func.sum(Producao.quantidade).label("total_pecas"),
-            ValorModelo.valor.label("valor_unitario"),
+            func.coalesce(ValorModelo.valor, 0).label("valor_unitario"),
             (
-                func.sum(Producao.quantidade) * ValorModelo.valor
+                func.sum(Producao.quantidade) *
+                func.coalesce(ValorModelo.valor, 0)
             ).label("valor_total")
         )
         .join(Ficha, Ficha.id == Producao.ficha_id)
         .join(Formulario, Formulario.id == Ficha.formulario_id)
         .join(Funcao, Funcao.id == Producao.funcao_id)
-        .join(
+        .outerjoin(
             ValorModelo,
             and_(
                 ValorModelo.modelo_id == Formulario.id,
@@ -201,27 +199,28 @@ async def consultar_producao_dados(
         .order_by(Formulario.nome_modelo, Funcao.nome)
     )
 
-    # ============================
-    # FILTROS DE DATA (opcional)
-    # ============================
-    if data_inicial:
-        query = query.filter(
-            Producao.criado_em >= datetime.fromisoformat(data_inicial)
-        )
+    def parse_data(data_str):
+        if not data_str:
+            return None
+        try:
+            return datetime.strptime(data_str, "%Y-%m-%d")
+        except ValueError:
+            return None
 
-    if data_final:
-        query = query.filter(
-            Producao.criado_em <= datetime.fromisoformat(data_final)
-        )
+    data_ini = parse_data(data_inicial)
+    data_fim = parse_data(data_final)
 
+    if data_ini:
+        query = query.filter(Producao.criado_em >= data_ini)
+
+    if data_fim:
+        query = query.filter(Producao.criado_em <= data_fim)
+    
     resultados = query.all()
 
     if not resultados:
         return {"erro": True}
 
-    # ============================
-    # RETORNO PARA O FRONT
-    # ============================
     return {
         "modelos": [r.modelo for r in resultados],
         "funcoes": [r.funcao for r in resultados],
@@ -229,6 +228,7 @@ async def consultar_producao_dados(
         "valores_unitarios": [float(r.valor_unitario) for r in resultados],
         "valores_totais": [float(r.valor_total) for r in resultados],
     }
+
 
 @router.post("/consultar_fichas_dados")
 #@login_required
@@ -255,7 +255,9 @@ async def consultar_fichas_dados(
         query = query.filter(Ficha.numero_ficha == numero_ficha)
 
     if modelo:
-        query = query.filter(Formulario.nome_modelo.ilike(f"%{modelo}%"))
+        query = query.filter(
+        func.lower(Formulario.nome_modelo).like(f"%{modelo.lower()}%")
+    )
 
     resultados = query.all()
 

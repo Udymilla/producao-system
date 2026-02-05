@@ -16,3 +16,16 @@ templates = Jinja2Templates(directory="backend/frontend/templates")
 # Disponibiliza now() globalmente no Jinja
 templates.env.globals["now"] = datetime.now
 
+def parse_data(data_str: str):
+    if not data_str:
+        return None
+
+    try:
+        # yyyy-mm-dd (input date)
+        return datetime.strptime(data_str, "%Y-%m-%d")
+    except ValueError:
+        try:
+            # dd/mm/yyyy (caso venha manual)
+            return datetime.strptime(data_str, "%d/%m/%Y")
+        except ValueError:
+            return None

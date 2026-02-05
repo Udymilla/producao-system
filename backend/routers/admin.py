@@ -221,12 +221,12 @@ async def gerar_relatorio_pdf(
 
     if data_inicial:
         query = query.filter(
-            Producao.criado_em >= datetime.fromisoformat(data_inicial)
+            Producao.criado_em >= datetime.strptime(data_inicial, "%d/%m/%Y")
         )
 
     if data_final:
         query = query.filter(
-            Producao.criado_em <= datetime.fromisoformat(data_final)
+            Producao.criado_em <= datetime.strptime(data_inicial, "%d/%m/%Y")
         )
 
     resultados = query.all()
