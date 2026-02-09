@@ -86,10 +86,11 @@ async def lancar_post(
     db: Session = Depends(get_db)
 ):
     form = await request.form()
+    print("FORM DATA:", dict(form))
 
     operador = form.get("operador")
-    formulario_id = form.get("formulario_id")   # ✅ vem do select
-    funcao_id = form.get("funcao_id")           # ✅ vem do select
+    formulario_id = form.get("formulario_id")
+    funcao_id = form.get("funcao_id")
     quantidade = form.get("quantidade")
 
     if not operador or not formulario_id or not funcao_id or not quantidade:
@@ -99,7 +100,7 @@ async def lancar_post(
     funcao_id = int(funcao_id)
     quantidade = int(quantidade)
 
-    # 🔹 BUSCA A FICHA CORRETA DO MODELO
+    # ✅ BUSCA FICHA EXISTENTE (NUNCA CRIA)
     ficha = (
         db.query(Ficha)
         .filter(Ficha.formulario_id == formulario_id)
@@ -108,7 +109,10 @@ async def lancar_post(
     )
 
     if not ficha:
-        raise HTTPException(status_code=400, detail="Nenhuma ficha encontrada para o modelo")
+        raise HTTPException(
+            status_code=400,
+            detail="Nenhuma ficha encontrada para este modelo"
+        )
 
     producao = Producao(
         ficha_id=ficha.id,

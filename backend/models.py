@@ -110,12 +110,12 @@ class Producao(Base):
     id = Column(Integer, primary_key=True)
     ficha_id = Column(Integer, ForeignKey("fichas.id"), nullable=False)
     funcao_id = Column(Integer, ForeignKey("funcoes.id"), nullable=False)
-    operador = Column(String, nullable=False)
+    usuario_id = Column(Integer, ForeignKey("usuarios_operacionais.id"))
     quantidade = Column(Integer, nullable=False)
     criado_em = Column(DateTime, nullable=False)
 
     ficha = relationship("Ficha", back_populates="producoes")
-
+    usuario = relationship("UsuarioOperacional")
 
 # ==========================================================
 # 🔹 USUÁRIOS DO SISTEMA DE LOGIN (geral)

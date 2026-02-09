@@ -15,15 +15,13 @@
 
     <div class="mb-4">
       <label class="block text-sm font-medium text-gray-700">Operador:</label>
-<select name="operador" required
+<select name="usuario_id" required
         class="w-full border border-gray-300 rounded px-3 py-2">
   <option value="">Operador</option>
   {% for op in operadores %}
-    <option value="{{ op.nome }}">
-      {{ op.nome }}
-    </option>
-
+    <option value="{{ op.id }}">{{ op.nome }}</option>
   {% endfor %}
+    
 </select>
 
 
