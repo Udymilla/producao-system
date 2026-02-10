@@ -88,13 +88,15 @@ async def lancar_post(
     form = await request.form()
     print("FORM DATA:", dict(form))
 
-    operador = form.get("operador")
     formulario_id = form.get("formulario_id")
     funcao_id = form.get("funcao_id")
     quantidade = form.get("quantidade")
+    usuario_id = form.get("usuario_id")
 
-    if not operador or not formulario_id or not funcao_id or not quantidade:
+    if not usuario_id or not formulario_id or not funcao_id or not quantidade:
         raise HTTPException(status_code=400, detail="Dados incompletos")
+
+    usuario_id = int(usuario_id)
 
     formulario_id = int(formulario_id)
     funcao_id = int(funcao_id)
@@ -116,7 +118,7 @@ async def lancar_post(
 
     producao = Producao(
         ficha_id=ficha.id,
-        operador=operador,
+        usuario_id=usuario_id,
         funcao_id=funcao_id,
         quantidade=quantidade,
         criado_em=datetime.utcnow()
@@ -130,7 +132,7 @@ async def lancar_post(
         {
             "request": request,
             "titulo": "Produção lançada ✅",
-            "mensagem": f"{quantidade} peças lançadas para {operador}"
+            "mensagem": f"{quantidade} peças lançadas para {usuario_id}"
         }
     )
 
@@ -182,7 +184,7 @@ async def consultar_producao_page(
 # ======================================================
 @router.post("/consultar_producao_dados")
 async def consultar_producao_dados(
-    operador: str = Form(...),
+    usuario_id: str = Form(...),
     data_inicial: str = Form(None),
     data_final: str = Form(None),
     db: Session = Depends(get_db)
@@ -207,14 +209,13 @@ async def consultar_producao_dados(
             ValorModelo.funcao_id == Producao.funcao_id
         )
     )
-    .filter(Producao.operador == operador)
+    .filter(Producao.usuario_id == usuario_id)
     .group_by(
         Formulario.nome_modelo,
         Funcao.nome,
         ValorModelo.valor
     )
 )
-
 
     def parse_data(data_str):
         if not data_str:
