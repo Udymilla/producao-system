@@ -8,11 +8,15 @@
 
   <!-- FILTRO -->
   <div class="grid md:grid-cols-4 gap-4 mb-6">
+    
     <div>
-      <label class="block text-sm font-medium">Operador</label>
-      <input type="text" id="operador"
-             class="w-full border rounded px-3 py-2"
-             placeholder="Ex: Udymilla">
+      <select id="usuario_id" class="w-full border rounded px-3 py-2">
+  <option value="">Selecione o operador</option>
+  {% for u in usuarios %}
+    <option value="{{ u.id }}">{{ u.nome }}</option>
+  {% endfor %}
+</select>
+
     </div>
 
     <div>
@@ -91,12 +95,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnPesquisar.addEventListener("click", async () => {
 
-    const operador = document.getElementById("operador").value.trim();
+    const usuario_id = document.getElementById("usuario_id").value;
     const data_inicial = document.getElementById("data_inicio").value;
     const data_final = document.getElementById("data_fim").value;
 
-    if (!operador) {
-      mensagem.textContent = "Informe o operador.";
+    if (!usuario_id) {
+      mensagem.textContent = "Informe o usuário.";
       mensagem.className = "mb-4 p-4 bg-yellow-100 text-yellow-800";
       mensagem.classList.remove("hidden");
       resultado.classList.add("hidden");
@@ -104,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const formData = new FormData();
-    formData.append("operador", operador);
+    formData.append("usuario_id", usuario_id);
     formData.append("data_inicial", data_inicial);
     formData.append("data_final", data_final);
 

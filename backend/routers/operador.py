@@ -157,7 +157,7 @@ async def consultar_producao_page(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    operadores = (
+    usuarios = (
         db.query(UsuarioOperacional.nome)
         .distinct()
         .order_by(UsuarioOperacional.nome.asc())
@@ -175,7 +175,7 @@ async def consultar_producao_page(
         "consultar_producao.html",
         {
             "request": request,
-            "operadores": [o[0] for o in operadores],
+            "usuario_id": [o[0] for o in usuarios],
             "modelos": [m[0] for m in modelos],
         }
     )
@@ -184,11 +184,12 @@ async def consultar_producao_page(
 # ======================================================
 @router.post("/consultar_producao_dados")
 async def consultar_producao_dados(
-    usuario_id: str = Form(...),
+    usuario_id: int = Form(...),
     data_inicial: str = Form(None),
     data_final: str = Form(None),
     db: Session = Depends(get_db)
 ):
+    
     query = (
     db.query(
         Formulario.nome_modelo.label("modelo"),
