@@ -7,37 +7,56 @@
 <div class="bg-white rounded-lg shadow p-6">
 
   <!-- FILTRO -->
-  <div class="grid md:grid-cols-4 gap-4 mb-6">
-    
-    <div>
-      <select id="usuario_id" class="w-full border rounded px-3 py-2">
-  <option value="">Selecione o operador</option>
-  {% for u in usuarios %}
-    <option value="{{ u.id }}">{{ u.nome }}</option>
-  {% endfor %}
-</select>
+<div class="bg-gray-50 rounded-lg p-6 mb-6">
 
+  <div class="grid md:grid-cols-4 gap-6 items-end">
+
+    <!-- OPERADOR -->
+    <div>
+      <label class="block text-sm font-medium mb-1">
+        Operador
+      </label>
+      <select id="usuario_id"
+              class="w-full h-11 border border-gray-300 rounded-md px-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        <option value="">Selecione o operador</option>
+        {% for u in usuarios %}
+          <option value="{{ u.id }}">{{ u.nome }}</option>
+        {% endfor %}
+      </select>
     </div>
 
+    <!-- DATA INICIAL -->
     <div>
-      <label class="block text-sm font-medium">Data Inicial</label>
-      <input type="date" id="data_inicio"
-             class="w-full border rounded px-3 py-2">
+      <label class="block text-sm font-medium mb-1">
+        Data Inicial
+      </label>
+      <input type="date"
+             id="data_inicio"
+             class="w-full h-11 border border-gray-300 rounded-md px-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
     </div>
 
+    <!-- DATA FINAL -->
     <div>
-      <label class="block text-sm font-medium">Data Final</label>
-      <input type="date" id="data_fim"
-             class="w-full border rounded px-3 py-2">
+      <label class="block text-sm font-medium mb-1">
+        Data Final
+      </label>
+      <input type="date"
+             id="data_fim"
+             class="w-full h-11 border border-gray-300 rounded-md px-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
     </div>
 
-    <div class="flex items-end">
-      <button id="pesquisar" type="button"
-              class="bg-blue-600 text-white px-4 py-2 rounded">
+    <!-- BOTÃO -->
+    <div>
+      <button id="pesquisar"
+              type="button"
+              class="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition">
         🔍 Pesquisar
       </button>
     </div>
+
   </div>
+
+</div>
 
   <form method="get" action="/consultar_producao/pdf" class="inline">
   <input type="hidden" name="operador" value="{{ operador }}">

@@ -152,33 +152,35 @@ async def consultar_fichas_page(request: Request):
 # ======================================================
 
 @router.get("/consultar_producao", response_class=HTMLResponse)
-#@login_required
 async def consultar_producao_page(
     request: Request,
     db: Session = Depends(get_db)
 ):
     usuarios = (
-        db.query(UsuarioOperacional.nome)
-        .distinct()
+        db.query(UsuarioOperacional)
+        .filter(UsuarioOperacional.ativo == 1)
         .order_by(UsuarioOperacional.nome.asc())
         .all()
     )
 
     modelos = (
-        db.query(Formulario.nome_modelo)
+        db.query(Formulario)
         .filter(Formulario.ativo == True)
         .order_by(Formulario.nome_modelo.asc())
         .all()
     )
 
+    print("USUARIOS:", [(u.id, u.nome) for u in usuarios])
+
     return templates.TemplateResponse(
         "consultar_producao.html",
         {
             "request": request,
-            "usuario_id": [o[0] for o in usuarios],
-            "modelos": [m[0] for m in modelos],
+            "usuarios": usuarios,
+            "modelos": modelos,
         }
     )
+
 # ======================================================
 # CONSULTAR PRODUÇÃO (DADOS)
 # ======================================================
@@ -257,18 +259,19 @@ async def consultar_fichas_dados(
     db: Session = Depends(get_db)
 ):
     query = (
-        db.query(
-            Ficha.numero_ficha.label("numero_ficha"),
-            Formulario.nome_modelo.label("modelo"),
-            Ficha.quantidade_total.label("quantidade_ficha"),
-            Producao.operador.label("operador"),
-            Funcao.nome.label("funcao")
-        )
-        .join(Ficha.formulario)
-        .outerjoin(Producao, Producao.ficha_id == Ficha.id)
-        .outerjoin(Funcao, Funcao.id == Producao.funcao_id)
-        .order_by(Ficha.numero_ficha)
+    db.query(
+        Ficha.numero_ficha.label("numero_ficha"),
+        Formulario.nome_modelo.label("modelo"),
+        Ficha.quantidade_total.label("quantidade_ficha"),
+        UsuarioOperacional.nome.label("operador"),
+        Funcao.nome.label("funcao")
     )
+    .join(Ficha.formulario)
+    .outerjoin(Producao, Producao.ficha_id == Ficha.id)
+    .outerjoin(UsuarioOperacional, UsuarioOperacional.id == Producao.usuario_id)
+    .outerjoin(Funcao, Funcao.id == Producao.funcao_id)
+    .order_by(Ficha.numero_ficha)
+)
 
     if numero_ficha:
         query = query.filter(Ficha.numero_ficha == numero_ficha)
