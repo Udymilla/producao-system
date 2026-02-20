@@ -235,7 +235,8 @@ async def consultar_producao_dados(
         query = query.filter(Producao.criado_em >= data_ini)
 
     if data_fim:
-        query = query.filter(Producao.criado_em <= data_fim)
+        data_fim = data_fim + timedelta(days=1)
+        query = query.filter(Producao.criado_em < data_fim)
     
     resultados = query.all()
 
