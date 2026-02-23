@@ -45,25 +45,21 @@
         <input value="{{ formulario.cor_vies or '-' }}" readonly class="input">
       </div>
     </div>
+<input type="hidden" name="ficha_id" value="{{ ficha.id }}">
 
-    <!-- Operador / Função -->
-    <div class="grid grid-cols-2 gap-4 mb-6">
-      <div>
-        <label class="font-bold block mb-1">Operador</label>
-        <input name="operador" required class="input">
-      </div>
+  <label>Operador</label>
+  <select name="usuario_id" required>
+    {% for u in usuarios %}
+      <option value="{{ u.id }}">{{ u.nome }}</option>
+    {% endfor %}
+  </select>
 
-      <div>
-  <label class="font-bold block mb-1">Função</label>
-
-  <select name="funcao_id" required class="input">
-  <option value="">Selecione…</option>
-  {% for f in funcoes %}
-    <option value="{{ f.id }}">{{ f.nome }}</option>
-  {% endfor %}
-</select>
-</div>
-    </div>
+  <label>Função</label>
+  <select name="funcao_id" required>
+    {% for f in funcoes %}
+      <option value="{{ f.id }}">{{ f.nome }}</option>
+    {% endfor %}
+  </select>
 
     <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-semibold">
       ✅ Lançar Produção

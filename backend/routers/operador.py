@@ -341,27 +341,34 @@ async def responder_ficha(
 
 @router.post("/responder_ficha")
 async def responder_ficha_post(
+    request: Request,
     ficha_id: int = Form(...),
-    operador: str = Form(...),
-    funcao_id: str = Form(...),
+    usuario_id: int = Form(...),
+    funcao_id: int = Form(...),
     db: Session = Depends(get_db)
 ):
+    usuario = db.query(UsuarioOperacional).filter(UsuarioOperacional.id == usuario_id).first()  # Substitua pelo usuário autenticado
     
-    print("FORM DATA:", ficha_id, operador, funcao_id)
+    if not usuario:
+        raise HTTPException(status_code=400, detail="Usuario não encontrada")
+    
+    print("FORM DATA:", ficha_id, usuario.nome, funcao_id)
     ficha = db.query(Ficha).filter(Ficha.id == ficha_id).first()
 
     if not ficha:
         raise HTTPException(status_code=404, detail="Ficha não encontrada")
-
+    
     producao = Producao(
     ficha_id=ficha_id,
-    operador=operador,
+    usuario_id=usuario.id,
     funcao_id=funcao_id,
     quantidade=ficha.quantidade_total,
     criado_em=datetime.utcnow()
 )
     db.add(producao)
     db.commit()
+
+    request.session["sucesso"] = "lançamento realizado com sucesso!"
 
     return RedirectResponse("/dashboard", status_code=303)
 
