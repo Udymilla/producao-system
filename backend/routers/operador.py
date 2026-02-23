@@ -190,40 +190,38 @@ async def consultar_producao_dados(
     data_final: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    
+    from sqlalchemy import func, and_
+    from datetime import datetime
+
     query = (
-    db.query(
-        Formulario.nome_modelo.label("modelo"),
-        Funcao.nome.label("funcao"),
-        func.sum(Producao.quantidade).label("total_pecas"),
-        ValorModelo.valor.label("valor_unitario"),
-        (
-            func.sum(Producao.quantidade) * func.coalesce(ValorModelo.valor, 0)
-        ).label("valor_total")
-    )
-    .join(Ficha, Ficha.id == Producao.ficha_id)
-    .join(Formulario, Formulario.id == Ficha.formulario_id)
-    .outerjoin(Funcao, Funcao.id == Producao.funcao_id)
-    .outerjoin(
-        ValorModelo,
-        and_(
-            ValorModelo.modelo_id == Formulario.id,
-            ValorModelo.funcao_id == Producao.funcao_id
+        db.query(
+            Formulario.nome_modelo.label("modelo"),
+            Funcao.nome.label("funcao"),
+            func.sum(Producao.quantidade).label("total_pecas"),
+            func.coalesce(ValorModelo.valor, 0).label("valor_unitario"),
+            (
+                func.sum(Producao.quantidade) *
+                func.coalesce(ValorModelo.valor, 0)
+            ).label("valor_total")
         )
+        .join(Ficha, Ficha.id == Producao.ficha_id)
+        .join(Formulario, Formulario.id == Ficha.formulario_id)
+        .outerjoin(Funcao, Funcao.id == Producao.funcao_id)
+        .outerjoin(
+            ValorModelo,
+            and_(
+                ValorModelo.modelo_id == Formulario.id,
+                ValorModelo.funcao_id == Producao.funcao_id
+            )
+        )
+        .filter(Producao.usuario_id == usuario_id)
     )
-    .filter(Producao.usuario_id == usuario_id)
-    .group_by(
-        Formulario.nome_modelo,
-        Funcao.nome,
-        ValorModelo.valor
-    )
-)
 
     def parse_data(data_str):
         if not data_str:
             return None
         try:
-            return datetime.strptime(data_str, "%Y-%m-%d")
+            return datetime.strptime(data_str, "%Y-%m-%d").date()
         except ValueError:
             return None
 
@@ -231,12 +229,17 @@ async def consultar_producao_dados(
     data_fim = parse_data(data_final)
 
     if data_ini:
-        query = query.filter(Producao.criado_em >= data_ini)
+        query = query.filter(func.date(Producao.criado_em) >= data_ini)
 
     if data_fim:
-        data_fim = data_fim + timedelta(days=1)
-        query = query.filter(Producao.criado_em < data_fim)
-    
+        query = query.filter(func.date(Producao.criado_em) <= data_fim)
+
+    query = query.group_by(
+        Formulario.nome_modelo,
+        Funcao.nome,
+        func.coalesce(ValorModelo.valor, 0)
+    )
+
     resultados = query.all()
 
     if not resultados:
@@ -245,9 +248,9 @@ async def consultar_producao_dados(
     return {
         "modelos": [r.modelo for r in resultados],
         "funcoes": [r.funcao for r in resultados],
-        "quantidades": [int(r.total_pecas) for r in resultados],
-        "valores_unitarios": [float(r.valor_unitario) for r in resultados],
-        "valores_totais": [float(r.valor_total) for r in resultados],
+        "quantidades": [int(r.total_pecas or 0) for r in resultados],
+        "valores_unitarios": [float(r.valor_unitario or 0) for r in resultados],
+        "valores_totais": [float(r.valor_total or 0) for r in resultados],
     }
 @router.post("/consultar_fichas_dados")
 #@login_required
