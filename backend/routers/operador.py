@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, Date, cast
+from sqlalchemy import func, and_, Date, cast, literal
 from datetime import datetime, timedelta
 from backend.utils import templates
 from backend.database import get_db
@@ -190,19 +190,16 @@ async def consultar_producao_dados(
     data_final: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    from sqlalchemy import func, and_
-    from datetime import datetime
+    # 1) EXPRESSÃO ÚNICA (reutilizada)
+    valor_unitario_expr = func.coalesce(ValorModelo.valor, literal(0))
 
     query = (
         db.query(
             Formulario.nome_modelo.label("modelo"),
             Funcao.nome.label("funcao"),
             func.sum(Producao.quantidade).label("total_pecas"),
-            func.coalesce(ValorModelo.valor, 0).label("valor_unitario"),
-            (
-                func.sum(Producao.quantidade) *
-                func.coalesce(ValorModelo.valor, 0)
-            ).label("valor_total")
+            valor_unitario_expr.label("valor_unitario"),
+            (func.sum(Producao.quantidade) * valor_unitario_expr).label("valor_total")
         )
         .join(Ficha, Ficha.id == Producao.ficha_id)
         .join(Formulario, Formulario.id == Ficha.formulario_id)
@@ -234,10 +231,11 @@ async def consultar_producao_dados(
     if data_fim:
         query = query.filter(func.date(Producao.criado_em) <= data_fim)
 
+    # 2) GROUP BY usando a MESMA expressão
     query = query.group_by(
         Formulario.nome_modelo,
         Funcao.nome,
-        func.coalesce(ValorModelo.valor, 0)
+        valor_unitario_expr
     )
 
     resultados = query.all()
@@ -252,6 +250,7 @@ async def consultar_producao_dados(
         "valores_unitarios": [float(r.valor_unitario or 0) for r in resultados],
         "valores_totais": [float(r.valor_total or 0) for r in resultados],
     }
+
 @router.post("/consultar_fichas_dados")
 #@login_required
 async def consultar_fichas_dados(
