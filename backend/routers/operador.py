@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, Date, cast
 from datetime import datetime, timedelta
-
 from backend.utils import templates
 from backend.database import get_db
 from backend.security import login_required
@@ -250,8 +249,6 @@ async def consultar_producao_dados(
         "valores_unitarios": [float(r.valor_unitario) for r in resultados],
         "valores_totais": [float(r.valor_total) for r in resultados],
     }
-
-
 @router.post("/consultar_fichas_dados")
 #@login_required
 async def consultar_fichas_dados(
@@ -312,6 +309,10 @@ async def responder_ficha(
         .first()
     )
 
+    usuarios = db.query(UsuarioOperacional).all()
+    funcoes = db.query(Funcao).all()
+    
+
     if not ficha:
         raise HTTPException(status_code=404, detail="Ficha não encontrada")
 
@@ -331,6 +332,7 @@ async def responder_ficha(
         {
             "request": request,
             "ficha": ficha,
+            "usuarios": usuarios,
             "formulario": formulario,
             "funcoes": funcoes
         }
@@ -371,8 +373,4 @@ async def responder_ficha_post(
     request.session["sucesso"] = "lançamento realizado com sucesso!"
 
     return RedirectResponse("/dashboard", status_code=303)
-
-    print("ficha_id:", ficha_id)
-    print("operador:", operador)
-    print("funcao_id:", funcao_id)
-    print("quantidade herdada:", ficha.quantidade_total)
+    

@@ -4,10 +4,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 import os
 import io
-
-
-
-
 import datetime
 import uuid
 import qrcode
