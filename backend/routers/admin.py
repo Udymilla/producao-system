@@ -12,7 +12,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.utils import ImageReader
 from backend.database import SessionLocal, get_db
-from backend.models import Usuario, Formulario, ValorModelo, Ficha, Funcao, Producao
+from backend.models import Usuario, Formulario, ValorModelo, Ficha, Funcao, Producao, UsuarioOperacional
 from backend.security import admin_required
 from backend.utils import templates
 
@@ -205,12 +205,13 @@ async def gerar_relatorio_pdf(
         .join(Ficha, Ficha.id == Producao.ficha_id)
         .join(Formulario, Formulario.id == Ficha.formulario_id)
         .join(Funcao, Funcao.id == Producao.funcao_id)
+        .join(UsuarioOperacional, UsuarioOperacional.id == Producao.usuario_id)
         .join(
             ValorModelo,
             (ValorModelo.modelo_id == Formulario.id) &
             (ValorModelo.funcao_id == Funcao.id)
         )
-        .filter(Producao.operador == operador)
+        .filter(Producao.usuario_id == int(operador))
         .group_by(Formulario.nome_modelo, Funcao.nome, ValorModelo.valor)
         .order_by(Formulario.nome_modelo)
     )

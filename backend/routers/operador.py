@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, Date, cast, literal
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from backend.utils import templates
 from backend.database import get_db
 from backend.security import login_required
@@ -190,67 +190,54 @@ async def consultar_producao_dados(
     data_final: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    # 1) EXPRESSÃO ÚNICA (reutilizada)
-    valor_unitario_expr = func.coalesce(ValorModelo.valor, literal(0))
+    from datetime import datetime, time
 
     query = (
         db.query(
+            Ficha.numero_ficha,
             Formulario.nome_modelo.label("modelo"),
             Funcao.nome.label("funcao"),
-            func.sum(Producao.quantidade).label("total_pecas"),
-            valor_unitario_expr.label("valor_unitario"),
-            (func.sum(Producao.quantidade) * valor_unitario_expr).label("valor_total")
+            Producao.quantidade,
+            Producao.criado_em
         )
         .join(Ficha, Ficha.id == Producao.ficha_id)
         .join(Formulario, Formulario.id == Ficha.formulario_id)
-        .outerjoin(Funcao, Funcao.id == Producao.funcao_id)
-        .outerjoin(
-            ValorModelo,
-            and_(
-                ValorModelo.modelo_id == Formulario.id,
-                ValorModelo.funcao_id == Producao.funcao_id
-            )
-        )
+        .join(Funcao, Funcao.id == Producao.funcao_id)
         .filter(Producao.usuario_id == usuario_id)
+        .order_by(Producao.criado_em.asc())
     )
 
-    def parse_data(data_str):
-        if not data_str:
-            return None
-        try:
-            return datetime.strptime(data_str, "%Y-%m-%d").date()
-        except ValueError:
-            return None
+    # ======================
+    # FILTRO DE DATA
+    # ======================
 
-    data_ini = parse_data(data_inicial)
-    data_fim = parse_data(data_final)
+    if data_inicial:
+        data_ini = datetime.strptime(data_inicial, "%Y-%m-%d").date()
+        inicio = datetime.combine(data_ini, time.min)
+        query = query.filter(Producao.criado_em >= inicio)
 
-    if data_ini:
-        query = query.filter(func.date(Producao.criado_em) >= data_ini)
-
-    if data_fim:
-        query = query.filter(func.date(Producao.criado_em) <= data_fim)
-
-    # 2) GROUP BY usando a MESMA expressão
-    query = query.group_by(
-        Formulario.nome_modelo,
-        Funcao.nome,
-        valor_unitario_expr
-    )
+    if data_final:
+        data_fim = datetime.strptime(data_final, "%Y-%m-%d").date()
+        fim = datetime.combine(data_fim, time.max)
+        query = query.filter(Producao.criado_em <= fim)
 
     resultados = query.all()
 
     if not resultados:
-        return {"erro": True}
+        return {"dados": []}
 
     return {
-        "modelos": [r.modelo for r in resultados],
-        "funcoes": [r.funcao for r in resultados],
-        "quantidades": [int(r.total_pecas or 0) for r in resultados],
-        "valores_unitarios": [float(r.valor_unitario or 0) for r in resultados],
-        "valores_totais": [float(r.valor_total or 0) for r in resultados],
+        "dados": [
+            {
+                "numero_ficha": r.numero_ficha,
+                "modelo": r.modelo,
+                "funcao": r.funcao,
+                "quantidade": r.quantidade,
+                "data": r.criado_em.strftime("%d/%m/%Y %H:%M")
+            }
+            for r in resultados
+        ]
     }
-
 @router.post("/consultar_fichas_dados")
 #@login_required
 async def consultar_fichas_dados(

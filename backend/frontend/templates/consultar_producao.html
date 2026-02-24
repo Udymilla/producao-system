@@ -85,6 +85,7 @@
           <th class="p-2">Ficha</th>
           <th class="p-2">Modelo</th>
           <th class="p-2">Função</th>
+          <th class="p-2">Data</th>
           <th class="p-2">Total Peças</th>
         </tr>
       </thead>
@@ -156,11 +157,15 @@ document.addEventListener("DOMContentLoaded", () => {
         <td class="p-2">${item.numero_ficha}</td>
         <td class="p-2">${item.modelo}</td>
         <td class="p-2">${item.funcao}</td>
+        <td class="p-2">${item.data}</td>
         <td class="p-2 text-right">${item.quantidade}</td>
       </tr>
     `).join("");
 
     /* =====================
+
+
+    
        GRÁFICO AGRUPADO
        Modelo (X) | Quantidade (Y) | Cor = Função
     ===================== */
