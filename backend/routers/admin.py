@@ -187,123 +187,6 @@ async def cadastro_formulario_post(
             "mensagem": mensagem
         }
     )
-@router.get("/consultar_producao/pdf")
-async def gerar_relatorio_pdf(
-    operador: str,
-    data_inicial: str = None,
-    data_final: str = None,
-    db: Session = Depends(get_db)
-):
-    # ==========================
-    # QUERY (a mesma da consulta)
-    # ==========================
-    query = (
-        db.query(
-            Formulario.nome_modelo.label("modelo"),
-            Funcao.nome.label("funcao"),
-            func.sum(Producao.quantidade).label("quantidade"),
-            ValorModelo.valor.label("valor_unitario")
-        )
-        .join(Ficha, Ficha.id == Producao.ficha_id)
-        .join(Formulario, Formulario.id == Ficha.formulario_id)
-        .join(Funcao, Funcao.id == Producao.funcao_id)
-        .join(UsuarioOperacional, UsuarioOperacional.id == Producao.usuario_id)
-        .join(
-            ValorModelo,
-            (ValorModelo.modelo_id == Formulario.id) &
-            (ValorModelo.funcao_id == Funcao.id)
-        )
-        .group_by(Formulario.nome_modelo, Funcao.nome, ValorModelo.valor)
-        .order_by(Formulario.nome_modelo)
-    )
-
-    if operador:
-        query = query.filter(Producao.usuario_id == int(operador))
-
-    if data_inicial:
-        query = query.filter(
-            Producao.criado_em >= datetime.strptime(data_inicial, "%Y-%m-%d")
-        )
-
-    if data_final:
-        query = query.filter(
-            Producao.criado_em <= datetime.strptime(data_final, "%Y-%m-%d")
-        )
-        
-
-    resultados = query.all()
-
-    # ==========================
-    # GERA PDF
-    # ==========================
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-
-    y = 27 * cm
-    total_geral = 0
-
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(2 * cm, y, "Relatório de Produção")
-    y -= 1 * cm
-
-    c.setFont("Helvetica", 12)
-    c.drawString(2 * cm, y, f"Operador: {operador}")
-    y -= 0.8 * cm
-
-    if data_inicial or data_final:
-        c.drawString(
-            2 * cm,
-            y,
-            f"Período: {data_inicial or '---'} até {data_final or '---'}"
-        )
-        y -= 1 * cm
-
-    c.line(2 * cm, y, 19 * cm, y)
-    y -= 0.8 * cm
-
-    c.setFont("Helvetica-Bold", 11)
-    c.drawString(2 * cm, y, "Modelo")
-    c.drawString(7 * cm, y, "Função")
-    c.drawString(11 * cm, y, "Qtd")
-    c.drawString(13 * cm, y, "Valor")
-    c.drawString(16 * cm, y, "Total")
-
-    y -= 0.6 * cm
-    c.setFont("Helvetica", 11)
-
-    for r in resultados:
-        total = r.quantidade * r.valor_unitario
-        total_geral += total
-
-        c.drawString(2 * cm, y, r.modelo)
-        c.drawString(7 * cm, y, r.funcao)
-        c.drawRightString(12.5 * cm, y, str(r.quantidade))
-        c.drawRightString(15 * cm, y, f"R$ {r.valor_unitario:.2f}")
-        c.drawRightString(19 * cm, y, f"R$ {total:.2f}")
-
-        y -= 0.6 * cm
-
-        if y < 2 * cm:
-            c.showPage()
-            y = 27 * cm
-
-    y -= 0.8 * cm
-    c.setFont("Helvetica-Bold", 13)
-    c.drawRightString(19 * cm, y, f"TOTAL GERAL: R$ {total_geral:.2f}")
-
-    c.showPage()
-    c.save()
-
-    buffer.seek(0)
-
-    return StreamingResponse(
-    buffer,
-    media_type="application/pdf",
-    headers={
-        "Content-Disposition": f"attachment; filename=relatorio_{operador}.pdf"
-    }
-)
-   
 
 # ======================================================
 # VALORES POR MODELO
@@ -363,135 +246,146 @@ async def gerar_fichas_page(
 # ======================================================
 @router.get("/consultar_producao/pdf")
 async def gerar_relatorio_pdf(
-    operador: int = Query(..., description="ID do operador"),
-    data_inicial: str | None = Query(None, description="YYYY-MM-DD"),
-    data_final: str | None = Query(None, description="YYYY-MM-DD"),
+    operador: int = Query(...),
+    data_inicial: str | None = Query(None),  # formato YYYY-MM-DD
+    data_final: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    # --------------------------
-    # 1) Nome do operador
-    # --------------------------
+    # =========================
+    # BUSCAR NOME DO OPERADOR
+    # =========================
     nome_operador = (
         db.query(UsuarioOperacional.nome)
         .filter(UsuarioOperacional.id == operador)
         .scalar()
     )
+
     if not nome_operador:
         raise HTTPException(status_code=404, detail="Operador não encontrado")
 
-    # --------------------------
-    # 2) Datas (igual tela: incluir o dia inteiro)
-    # --------------------------
+    # =========================
+    # TRATAR DATAS (dia inteiro)
+    # =========================
     dt_ini = None
-    dt_fim_exclusivo = None
+    dt_fim = None
 
     if data_inicial:
         dt_ini = datetime.strptime(data_inicial, "%Y-%m-%d")
 
     if data_final:
-        dt_fim_exclusivo = datetime.strptime(data_final, "%Y-%m-%d") + timedelta(days=1)
+        dt_fim = datetime.strptime(data_final, "%Y-%m-%d") + timedelta(days=1)
 
-    # --------------------------
-    # 3) Query NÃO AGRUPADA (lançamento por lançamento)
-    # --------------------------
-    valor_unitario_expr = func.coalesce(ValorModelo.valor, literal(0))
-
+    # =========================
+    # QUERY AGRUPADA
+    # =========================
     query = (
         db.query(
-            Ficha.numero_ficha.label("numero_ficha"),
             Formulario.nome_modelo.label("modelo"),
             Funcao.nome.label("funcao"),
-            Producao.quantidade.label("quantidade"),
-            Producao.criado_em.label("criado_em"),
-            valor_unitario_expr.label("valor_unitario"),
+            func.sum(Producao.quantidade).label("quantidade"),
+            func.coalesce(ValorModelo.valor, 0).label("valor_unitario"),
         )
         .join(Ficha, Ficha.id == Producao.ficha_id)
         .join(Formulario, Formulario.id == Ficha.formulario_id)
         .join(Funcao, Funcao.id == Producao.funcao_id)
         .join(UsuarioOperacional, UsuarioOperacional.id == Producao.usuario_id)
-        # valor pode não existir -> OUTERJOIN pra não sumir com o lançamento
         .outerjoin(
             ValorModelo,
-            (ValorModelo.modelo_id == Formulario.id) &
-            (ValorModelo.funcao_id == Producao.funcao_id)
+            (ValorModelo.modelo_id == Formulario.id)
+            & (ValorModelo.funcao_id == Producao.funcao_id),
         )
         .filter(Producao.usuario_id == operador)
-        .order_by(Producao.criado_em.asc())
     )
 
     if dt_ini:
         query = query.filter(Producao.criado_em >= dt_ini)
-    if dt_fim_exclusivo:
-        query = query.filter(Producao.criado_em < dt_fim_exclusivo)
+
+    if dt_fim:
+        query = query.filter(Producao.criado_em < dt_fim)
+
+    query = query.group_by(
+        Formulario.nome_modelo,
+        Funcao.nome,
+        ValorModelo.valor,
+    ).order_by(Formulario.nome_modelo, Funcao.nome)
 
     resultados = query.all()
 
-    # --------------------------
-    # 4) PDF
-    # --------------------------
+    # =========================
+    # GERAR PDF
+    # =========================
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
     y = 27 * cm
     total_geral = 0.0
 
+    # Título
     c.setFont("Helvetica-Bold", 16)
     c.drawString(2 * cm, y, "Relatório de Produção")
-    y -= 1.0 * cm
+    y -= 1 * cm
 
+    # Operador
     c.setFont("Helvetica", 12)
     c.drawString(2 * cm, y, f"Operador: {nome_operador} (ID {operador})")
     y -= 0.7 * cm
 
+    # Período
     if data_inicial or data_final:
-        c.drawString(2 * cm, y, f"Período: {data_inicial or '---'} até {data_final or '---'}")
+        c.drawString(
+            2 * cm,
+            y,
+            f"Período: {data_inicial or '---'} até {data_final or '---'}",
+        )
         y -= 0.7 * cm
 
-    y -= 0.2 * cm
+    y -= 0.3 * cm
     c.line(2 * cm, y, 19 * cm, y)
     y -= 0.8 * cm
 
-    # Cabeçalho
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(2.0 * cm, y, "Ficha")
-    c.drawString(4.0 * cm, y, "Modelo")
-    c.drawString(10.5 * cm, y, "Função")
-    c.drawString(14.2 * cm, y, "Data/Hora")
-    c.drawRightString(17.2 * cm, y, "Qtd")
-    c.drawRightString(19.0 * cm, y, "Total")
+    # Cabeçalho tabela
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(2 * cm, y, "Modelo")
+    c.drawString(8 * cm, y, "Função")
+    c.drawString(12 * cm, y, "Qtd")
+    c.drawString(14 * cm, y, "Valor")
+    c.drawString(17 * cm, y, "Total")
+
     y -= 0.6 * cm
+    c.setFont("Helvetica", 11)
 
-    c.setFont("Helvetica", 10)
-
+    # Linhas agrupadas
     for r in resultados:
         total = float(r.quantidade or 0) * float(r.valor_unitario or 0)
         total_geral += total
 
-        data_fmt = r.criado_em.strftime("%d/%m/%Y %H:%M") if r.criado_em else ""
+        c.drawString(2 * cm, y, r.modelo)
+        c.drawString(8 * cm, y, r.funcao)
+        c.drawRightString(13 * cm, y, str(r.quantidade or 0))
+        c.drawRightString(16 * cm, y, f"R$ {r.valor_unitario:.2f}")
+        c.drawRightString(19 * cm, y, f"R$ {total:.2f}")
 
-        c.drawString(2.0 * cm, y, str(r.numero_ficha))
-        c.drawString(4.0 * cm, y, (r.modelo or "")[:32])
-        c.drawString(10.5 * cm, y, (r.funcao or "")[:20])
-        c.drawString(14.2 * cm, y, data_fmt)
-        c.drawRightString(17.2 * cm, y, str(r.quantidade or 0))
-        c.drawRightString(19.0 * cm, y, f"R$ {total:.2f}")
+        y -= 0.6 * cm
 
-        y -= 0.55 * cm
-        if y < 2.0 * cm:
+        if y < 2 * cm:
             c.showPage()
             y = 27 * cm
-            c.setFont("Helvetica", 10)
+            c.setFont("Helvetica", 11)
 
+    # Total Geral
     y -= 0.8 * cm
-    c.setFont("Helvetica-Bold", 12)
-    c.drawRightString(19.0 * cm, y, f"TOTAL GERAL: R$ {total_geral:.2f}")
+    c.setFont("Helvetica-Bold", 13)
+    c.drawRightString(19 * cm, y, f"TOTAL GERAL: R$ {total_geral:.2f}")
 
     c.showPage()
     c.save()
+
     buffer.seek(0)
 
     return StreamingResponse(
         buffer,
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=relatorio_{operador}.pdf"},
+        headers={
+            "Content-Disposition": f"attachment; filename=relatorio_{operador}.pdf"
+        },
     )
