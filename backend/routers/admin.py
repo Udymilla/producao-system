@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Request, Form, Depends, File, UploadFile
+from fastapi import APIRouter, Request, Form, Depends, File, UploadFile, Query, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, literal
 import os
 import io
-import datetime
 import uuid
 import qrcode
 from reportlab.pdfgen import canvas
@@ -15,6 +14,9 @@ from backend.database import SessionLocal, get_db
 from backend.models import Usuario, Formulario, ValorModelo, Ficha, Funcao, Producao, UsuarioOperacional
 from backend.security import admin_required
 from backend.utils import templates
+from datetime import datetime, timedelta
+import io
+from fastapi.responses import StreamingResponse
 
 # ======================================================
 # CONFIG
@@ -211,20 +213,23 @@ async def gerar_relatorio_pdf(
             (ValorModelo.modelo_id == Formulario.id) &
             (ValorModelo.funcao_id == Funcao.id)
         )
-        .filter(Producao.usuario_id == int(operador))
         .group_by(Formulario.nome_modelo, Funcao.nome, ValorModelo.valor)
         .order_by(Formulario.nome_modelo)
     )
 
+    if operador:
+        query = query.filter(Producao.usuario_id == int(operador))
+
     if data_inicial:
         query = query.filter(
-            Producao.criado_em >= datetime.strptime(data_inicial, "%d/%m/%Y")
+            Producao.criado_em >= datetime.strptime(data_inicial, "%Y-%m-%d")
         )
 
     if data_final:
         query = query.filter(
-            Producao.criado_em <= datetime.strptime(data_inicial, "%d/%m/%Y")
+            Producao.criado_em <= datetime.strptime(data_final, "%Y-%m-%d")
         )
+        
 
     resultados = query.all()
 
@@ -356,80 +361,137 @@ async def gerar_fichas_page(
 # ======================================================
 # GERAR FICHAS (PDF + QR)
 # ======================================================
-
-@router.post("/gerar_fichas")
-@admin_required
-async def gerar_fichas(
-    request: Request,
-    formulario_id: int = Form(...),
-    qtd_fichas: int = Form(...),
-    db: Session = Depends(get_db)
+@router.get("/consultar_producao/pdf")
+async def gerar_relatorio_pdf(
+    operador: int = Query(..., description="ID do operador"),
+    data_inicial: str | None = Query(None, description="YYYY-MM-DD"),
+    data_final: str | None = Query(None, description="YYYY-MM-DD"),
+    db: Session = Depends(get_db),
 ):
-    formulario = db.query(Formulario).get(formulario_id)
-    if not formulario:
-        raise Exception("Modelo não encontrado")
+    # --------------------------
+    # 1) Nome do operador
+    # --------------------------
+    nome_operador = (
+        db.query(UsuarioOperacional.nome)
+        .filter(UsuarioOperacional.id == operador)
+        .scalar()
+    )
+    if not nome_operador:
+        raise HTTPException(status_code=404, detail="Operador não encontrado")
 
-    ultima = db.query(Ficha).order_by(Ficha.id.desc()).first()
-    proximo_numero = 8000 if not ultima else int(ultima.numero_ficha) + 1
+    # --------------------------
+    # 2) Datas (igual tela: incluir o dia inteiro)
+    # --------------------------
+    dt_ini = None
+    dt_fim_exclusivo = None
 
-    quantidade = 50 if "LUVA" in formulario.nome_modelo.upper() else 20
-    fichas = []
+    if data_inicial:
+        dt_ini = datetime.strptime(data_inicial, "%Y-%m-%d")
 
-    # ======================
-    # 🗃️ CRIA FICHAS NO BD
-    # ======================
-    for i in range(qtd_fichas):
-        ficha = Ficha(
-            numero_ficha=str(proximo_numero + i),
-            quantidade_total=quantidade,
-            formulario_id=formulario.id,
-            token_qr=str(uuid.uuid4())
+    if data_final:
+        dt_fim_exclusivo = datetime.strptime(data_final, "%Y-%m-%d") + timedelta(days=1)
+
+    # --------------------------
+    # 3) Query NÃO AGRUPADA (lançamento por lançamento)
+    # --------------------------
+    valor_unitario_expr = func.coalesce(ValorModelo.valor, literal(0))
+
+    query = (
+        db.query(
+            Ficha.numero_ficha.label("numero_ficha"),
+            Formulario.nome_modelo.label("modelo"),
+            Funcao.nome.label("funcao"),
+            Producao.quantidade.label("quantidade"),
+            Producao.criado_em.label("criado_em"),
+            valor_unitario_expr.label("valor_unitario"),
         )
-        db.add(ficha)
-        fichas.append(ficha)
-
-    db.commit()
-
-    # ======================
-    # 📄 GERA PDF + QR
-    # ======================
-    pdf_path = "fichas_geradas.pdf"
-    c = canvas.Canvas(pdf_path, pagesize=A4)
-
-    for ficha in fichas:
-        qr_url = f"http://127.0.0.1:8000/responder_ficha?token={ficha.token_qr}"
-        qr_img = qrcode.make(qr_url)
-
-        buffer = io.BytesIO()
-        qr_img.save(buffer, format="PNG")
-        buffer.seek(0)
-        qr_image = ImageReader(buffer)
-
-        c.setFont("Helvetica-Bold", 24)
-        c.drawCentredString(10.5 * cm, 27 * cm, f"FICHA Nº {ficha.numero_ficha}")
-
-        c.setFont("Helvetica", 18)
-        c.drawCentredString(
-            10.5 * cm,
-            25 * cm,
-            f"MODELO: {ficha.formulario.nome_modelo}"
+        .join(Ficha, Ficha.id == Producao.ficha_id)
+        .join(Formulario, Formulario.id == Ficha.formulario_id)
+        .join(Funcao, Funcao.id == Producao.funcao_id)
+        .join(UsuarioOperacional, UsuarioOperacional.id == Producao.usuario_id)
+        # valor pode não existir -> OUTERJOIN pra não sumir com o lançamento
+        .outerjoin(
+            ValorModelo,
+            (ValorModelo.modelo_id == Formulario.id) &
+            (ValorModelo.funcao_id == Producao.funcao_id)
         )
+        .filter(Producao.usuario_id == operador)
+        .order_by(Producao.criado_em.asc())
+    )
 
-        c.setFont("Helvetica", 16)
-        c.drawCentredString(
-            10.5 * cm,
-            23.5 * cm,
-            f"QUANTIDADE: {ficha.quantidade_total} PEÇAS"
-        )
+    if dt_ini:
+        query = query.filter(Producao.criado_em >= dt_ini)
+    if dt_fim_exclusivo:
+        query = query.filter(Producao.criado_em < dt_fim_exclusivo)
 
-        c.drawImage(qr_image, 6.5 * cm, 13 * cm, width=8 * cm, height=8 * cm)
+    resultados = query.all()
 
-        c.showPage()
+    # --------------------------
+    # 4) PDF
+    # --------------------------
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
 
+    y = 27 * cm
+    total_geral = 0.0
+
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(2 * cm, y, "Relatório de Produção")
+    y -= 1.0 * cm
+
+    c.setFont("Helvetica", 12)
+    c.drawString(2 * cm, y, f"Operador: {nome_operador} (ID {operador})")
+    y -= 0.7 * cm
+
+    if data_inicial or data_final:
+        c.drawString(2 * cm, y, f"Período: {data_inicial or '---'} até {data_final or '---'}")
+        y -= 0.7 * cm
+
+    y -= 0.2 * cm
+    c.line(2 * cm, y, 19 * cm, y)
+    y -= 0.8 * cm
+
+    # Cabeçalho
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(2.0 * cm, y, "Ficha")
+    c.drawString(4.0 * cm, y, "Modelo")
+    c.drawString(10.5 * cm, y, "Função")
+    c.drawString(14.2 * cm, y, "Data/Hora")
+    c.drawRightString(17.2 * cm, y, "Qtd")
+    c.drawRightString(19.0 * cm, y, "Total")
+    y -= 0.6 * cm
+
+    c.setFont("Helvetica", 10)
+
+    for r in resultados:
+        total = float(r.quantidade or 0) * float(r.valor_unitario or 0)
+        total_geral += total
+
+        data_fmt = r.criado_em.strftime("%d/%m/%Y %H:%M") if r.criado_em else ""
+
+        c.drawString(2.0 * cm, y, str(r.numero_ficha))
+        c.drawString(4.0 * cm, y, (r.modelo or "")[:32])
+        c.drawString(10.5 * cm, y, (r.funcao or "")[:20])
+        c.drawString(14.2 * cm, y, data_fmt)
+        c.drawRightString(17.2 * cm, y, str(r.quantidade or 0))
+        c.drawRightString(19.0 * cm, y, f"R$ {total:.2f}")
+
+        y -= 0.55 * cm
+        if y < 2.0 * cm:
+            c.showPage()
+            y = 27 * cm
+            c.setFont("Helvetica", 10)
+
+    y -= 0.8 * cm
+    c.setFont("Helvetica-Bold", 12)
+    c.drawRightString(19.0 * cm, y, f"TOTAL GERAL: R$ {total_geral:.2f}")
+
+    c.showPage()
     c.save()
+    buffer.seek(0)
 
-    return FileResponse(
-        pdf_path,
-        filename="fichas_geradas.pdf",
-        media_type="application/pdf"
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=relatorio_{operador}.pdf"},
     )

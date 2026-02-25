@@ -58,10 +58,10 @@
 
 </div>
 
-  <form method="get" action="/consultar_producao/pdf" class="inline">
-  <input type="hidden" name="operador" value="{{ operador }}">
-  <input type="hidden" name="data_inicial" value="{{ data_inicial }}">
-  <input type="hidden" name="data_final" value="{{ data_final }}">
+  <form method="get" action="/consultar_producao/pdf" class="inline" id="formPDF">
+  <input type="hidden" name="operador">
+  <input type="hidden" name="data_inicial">
+  <input type="hidden" name="data_final">
 
   <button
     type="submit"
@@ -183,6 +183,21 @@ document.addEventListener("DOMContentLoaded", () => {
       "PASSA VIES": "#16a34a",
       "PASSAR VIES": "#ea580c"
     };
+
+    const formPDF = document.getElementById("formPDF");
+
+    formPDF.addEventListener("submit", function () {
+
+    document.querySelector("input[name='operador']").value =
+    document.getElementById("usuario_id").value;
+
+    document.querySelector("input[name='data_inicial']").value =
+    document.getElementById("data_inicio").value;
+
+    document.querySelector("input[name='data_final']").value =
+    document.getElementById("data_fim").value;
+
+});
 
     const datasets = funcoes.map(funcao => ({
       label: funcao,
