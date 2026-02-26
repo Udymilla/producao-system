@@ -1,21 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Funcionários - Sistema Dadalto</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 font-sans">
-    <div class="min-h-screen p-6">
-        <!-- Cabeçalho -->
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold text-blue-800">👥 Funcionários</h1>
-            <a href="/administracao" class="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800 transition">
-                ← Voltar
-            </a>
-        </div>
+{% extends "base.html" %}
+{% block title %}Funcionários - Sistema Dadalto{% endblock %}
+{% block page_title %}Funcionários{% endblock %}
+{% set back_url = '/dashboard' %}
 
+{% block content %}
+<body class="bg-gray-100 font-sans">
         <!-- Card principal -->
         <div class="bg-white rounded-xl shadow-lg p-8 max-w-xl mx-auto">
             <div class="flex items-center space-x-4">
@@ -35,4 +24,4 @@
         </div>
     </div>
 </body>
-</html>
+{% endblock %}

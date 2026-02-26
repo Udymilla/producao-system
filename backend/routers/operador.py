@@ -29,6 +29,14 @@ async def dashboard(request: Request):
         {"request": request}
     )
 
+@router.get("/funcionarios", response_class=HTMLResponse)
+#@login_required
+async def funcionarios(request: Request):
+    return templates.TemplateResponse(
+        "funcionarios.html",
+        {"request": request}
+    )
+
 # ======================================================
 # LANÇAR PRODUÇÃO (TELA)
 # ======================================================
