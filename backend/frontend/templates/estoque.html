@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Estoque - Sistema Dadalto{% endblock %}
+{% block page_title %}Estoque Setorizado{% endblock %}
+{% set back_url = '/dashboard' %}
+
+{% block content %}
+
+
+
+
+<div class="bg-white p-6 rounded shadow">
+
+<h3 class="text-xl font-bold mb-4">
+Fluxo de Produção
+</h3>
+
+<canvas id="grafFluxo" height="120"></canvas>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+async function carregarEstoque(){
+
+  const resp = await fetch("/estoque_dados",{
+      method:"POST"
+  })
+
+  const data = await resp.json()
+
+  const modelos = Object.keys(data)
+
+  const corte = modelos.map(m => data[m].corte)
+  const costura = modelos.map(m => data[m].costura)
+  const acabamento = modelos.map(m => data[m].acabamento)
+
+  const ctx = document.getElementById("grafFluxo")
+
+  new Chart(ctx,{
+
+      type:"bar",
+
+      data:{
+          labels:modelos,
+
+          datasets:[
+            {
+              label:"Corte",
+              data:corte,
+              backgroundColor:"#2563eb"
+            },
+            {
+              label:"Costura",
+              data:costura,
+              backgroundColor:"#7c3aed"
+            },
+            {
+              label:"Acabamento",
+              data:acabamento,
+              backgroundColor:"#16a34a"
+            }
+          ]
+      },
+
+      options:{
+          responsive:true,
+          scales:{
+              y:{beginAtZero:true}
+          }
+      }
+
+  })
+
+}
+
+carregarEstoque()
+
+</script>
+{% endblock %}

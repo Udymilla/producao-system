@@ -86,108 +86,91 @@ async def cadastro_formulario_post(
             "mensagem": f"✅ Usuário <b>{nome}</b> cadastrado como <b>{perfil}</b>!"
         }
     )
-
-# ======================================================
-# FORMULÁRIOS / MODELOS
-# ======================================================
-@router.get("/modelos", response_class=HTMLResponse)
-@admin_required
-async def modelos_page(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    modelos = (
-        db.query(Formulario)
-        .filter(Formulario.ativo == True)
-        .order_by(Formulario.nome_modelo)
-        .all()
-    )
-
-    funcoes = (
-        db.query(Funcao)
-        .order_by(Funcao.nome)
-        .all()
-    )
-
-    valores = (
-        db.query(ValorModelo)
-        .join(Formulario)
-        .join(Funcao)
-        .order_by(Formulario.nome_modelo, Funcao.nome)
-        .all()
-    )
-
+@router.get("/estoque")
+async def tela_estoque(request: Request):
     return templates.TemplateResponse(
-        "modelos.html",
-        {
-            "request": request,
-            "modelos": modelos,
-            "funcoes": funcoes,
-            "valores": valores
+        "estoque.html",
+        {"request": request}
+    )
+@router.post("/estoque_dados")
+async def estoque_dados(db: Session = Depends(get_db)):
+
+    dados = db.query(
+        Formulario.nome_modelo.label("modelo"),
+        Funcao.nome.label("funcao"),
+        func.sum(Producao.quantidade).label("quantidade")
+    ).join(
+        Ficha, Ficha.id == Producao.ficha_id
+    ).join(
+        Formulario, Formulario.id == Ficha.formulario_id
+    ).join(
+        Funcao, Funcao.id == Producao.funcao_id
+    ).group_by(
+        Formulario.nome_modelo,
+        Funcao.nome
+    ).all()
+
+
+    funcoes_corte = {
+        "CORTADOR","AMONTOADOR","COLADOR","REFORCADOR","REFORCO"
+    }
+
+    funcoes_costura = {
+        "BAIXA COSTURA","EMENDAR DORSO","FECHAR LUVA","LUVA COMPLETA",
+        "PASSAR VIES","PREGAR OVO + ELASTICO","FECHAR LUVA + PREGAR PUNHO MALHA",
+        "PREGAR OVO","PREGAR ELASTICO","PREGAR DORSO + FIVELA",
+        "PREGAR FORCHETA","PREGAR DEDÃO","PREGAR DEDAO"
+    }
+
+    funcoes_acabamento = {
+        "REFILAR","PASSAR","PASSAR LUVA",
+        "REVISAR E EMPACOTAR","VIRADOR",
+        "VIRAR-PASSAR-REVISAR E EMPACOTAR",
+        "PASSAR-REVISAR E EMPACOTAR"
+    }
+
+
+    corte = {}
+    costura = {}
+    acabamento = {}
+
+    for d in dados:
+
+        modelo = d.modelo
+        funcao = d.funcao.upper()
+        qtd = int(d.quantidade)
+
+        if funcao in funcoes_corte:
+            corte[modelo] = corte.get(modelo,0) + qtd
+
+        elif funcao in funcoes_costura:
+            costura[modelo] = costura.get(modelo,0) + qtd
+
+        elif funcao in funcoes_acabamento:
+            acabamento[modelo] = acabamento.get(modelo,0) + qtd
+
+
+    resultado = {}
+
+    modelos = set(list(corte.keys()) + list(costura.keys()) + list(acabamento.keys()))
+
+    for modelo in modelos:
+
+        qtd_corte = corte.get(modelo,0)
+        qtd_costura = costura.get(modelo,0)
+        qtd_acab = acabamento.get(modelo,0)
+
+        estoque_corte = max(qtd_corte - qtd_costura,0)
+        estoque_costura = max(qtd_costura - qtd_acab,0)
+        estoque_acab = qtd_acab
+
+        resultado[modelo] = {
+            "corte": estoque_corte,
+            "costura": estoque_costura,
+            "acabamento": estoque_acab
         }
-    )
 
-@router.get("/cadastro_formulario", response_class=HTMLResponse)
-@admin_required
-async def cadastro_formulario_page(
-    request: Request,
-    db: Session = Depends(get_db)
-):
-    modelos = db.query(Formulario).order_by(Formulario.nome_modelo.asc()).all()
-
-    return templates.TemplateResponse(
-        "cadastro_formulario.html",
-        {"request": request, "modelos": modelos}
-    )
-
-@router.post("/cadastro_formulario", response_class=HTMLResponse)
-@admin_required
-async def cadastro_formulario_post(
-    request: Request,
-    nome_modelo: str = Form(...),
-    cor_vies: str = Form(""),
-    ca: str = Form(""),
-    tamanhos: list[str] = Form([]),
-    db: Session = Depends(get_db)
-):
-    nome_modelo = nome_modelo.strip()
-
-    existente = (
-        db.query(Formulario)
-        .filter(Formulario.nome_modelo == nome_modelo)
-        .first()
-    )
-
-    if existente:
-        existente.tamanhos = ",".join(tamanhos)
-        existente.cor_vies = cor_vies
-        existente.ca = ca
-        existente.ativo = True
-        db.commit()
-        mensagem = f"🔄 Modelo <b>{nome_modelo}</b> atualizado!"
-    else:
-        novo = Formulario(
-            nome_modelo=nome_modelo,
-            tamanhos=",".join(tamanhos),
-            cor_vies=cor_vies,
-            ca=ca,
-            ativo=True
-        )
-        db.add(novo)
-        db.commit()
-        mensagem = f"✅ Novo modelo <b>{nome_modelo}</b> cadastrado!"
-
-    modelos = db.query(Formulario).order_by(Formulario.nome_modelo).all()
-
-    return templates.TemplateResponse(
-        "cadastro_formulario.html",
-        {
-            "request": request,
-            "modelos": modelos,
-            "mensagem": mensagem
-        }
-    )
-
+    return resultado
 # ======================================================
 # VALORES POR MODELO
 # ======================================================
