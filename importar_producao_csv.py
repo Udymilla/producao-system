@@ -159,6 +159,7 @@ for i, row in df.iterrows():
             print(importados, "registros importados...")
 
     except Exception as e:
+        db.rollback()
 
         erros += 1
         print("Erro linha", i, ":", e)
