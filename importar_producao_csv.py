@@ -9,10 +9,13 @@ from backend.models import (
     Producao,
     Ficha,
     Formulario,
-    Funcao,
+    Funcao
 )
 
 
+# -----------------------------
+# NORMALIZAR TEXTO
+# -----------------------------
 def normalizar(texto):
     texto = str(texto).strip().upper()
     texto = unicodedata.normalize("NFKD", texto)
@@ -20,16 +23,9 @@ def normalizar(texto):
     return texto
 
 
-def parse_data(valor):
-    if pd.isna(valor):
-        return datetime.now()
-
-    try:
-        return pd.to_datetime(valor).to_pydatetime()
-    except Exception:
-        return datetime.now()
-
-
+# -----------------------------
+# INICIO
+# -----------------------------
 print("Lendo CSV...")
 
 df = pd.read_csv(
@@ -40,26 +36,46 @@ df = pd.read_csv(
     on_bad_lines="skip"
 )
 
+# remove espaços das colunas
 df.columns = df.columns.str.strip()
+
+# normaliza colunas
 df.columns = [normalizar(c) for c in df.columns]
 
 print("Linhas encontradas:", len(df))
 
+
+# -----------------------------
+# BANCO
+# -----------------------------
 db = SessionLocal()
 
 erros = 0
 importados = 0
 
+
+# -----------------------------
+# LOOP IMPORTAÇÃO
+# -----------------------------
 for i, row in df.iterrows():
+
     try:
+
         nome = str(row["SEU NOME"]).strip()
-        nome_funcao = str(row["FUNCAO"]).strip()
+        funcao_nome = str(row["FUNCAO"]).strip()
         modelo = str(row["MODELO"]).strip()
+
         quantidade = int(row["QUANTIDADE DE PAR"])
         numero_ficha = int(row["NUMERO DA FICHA"])
-        data = parse_data(row["CARIMBO DE DATA/HORA"])
 
-        # 1) OPERADOR
+        data = pd.to_datetime(row["CARIMBO DE DATA/HORA"], errors="coerce")
+
+        if pd.isna(data):
+            data = datetime.utcnow()
+
+        # -----------------------------
+        # OPERADOR
+        # -----------------------------
         operador = db.query(UsuarioOperacional).filter(
             UsuarioOperacional.nome == nome
         ).first()
@@ -68,26 +84,28 @@ for i, row in df.iterrows():
             operador = UsuarioOperacional(
                 nome=nome,
                 senha="1234",
-                tipo=nome_funcao
+                tipo=funcao_nome
             )
             db.add(operador)
-            db.commit()
-            db.refresh(operador)
+            db.flush()
             print("Operador criado:", nome)
 
-        # 2) FUNÇÃO
+        # -----------------------------
+        # FUNÇÃO
+        # -----------------------------
         funcao = db.query(Funcao).filter(
-            Funcao.nome == nome_funcao
+            Funcao.nome == funcao_nome
         ).first()
 
         if not funcao:
-            funcao = Funcao(nome=nome_funcao)
+            funcao = Funcao(nome=funcao_nome)
             db.add(funcao)
-            db.commit()
-            db.refresh(funcao)
-            print("Função criada:", nome_funcao)
+            db.flush()
+            print("Função criada:", funcao_nome)
 
-        # 3) MODELO / FORMULÁRIO
+        # -----------------------------
+        # FORMULÁRIO / MODELO
+        # -----------------------------
         formulario = db.query(Formulario).filter(
             Formulario.nome_modelo == modelo
         ).first()
@@ -98,11 +116,12 @@ for i, row in df.iterrows():
                 ativo=True
             )
             db.add(formulario)
-            db.commit()
-            db.refresh(formulario)
+            db.flush()
             print("Modelo criado:", modelo)
 
-        # 4) FICHA
+        # -----------------------------
+        # FICHA
+        # -----------------------------
         ficha = db.query(Ficha).filter(
             Ficha.numero_ficha == numero_ficha
         ).first()
@@ -114,12 +133,14 @@ for i, row in df.iterrows():
                 quantidade_total=quantidade,
                 formulario_id=formulario.id
             )
+
             db.add(ficha)
-            db.commit()
-            db.refresh(ficha)
+            db.flush()
             print("Ficha criada:", numero_ficha)
 
-        # 5) PRODUÇÃO
+        # -----------------------------
+        # PRODUÇÃO
+        # -----------------------------
         producao = Producao(
             ficha_id=ficha.id,
             funcao_id=funcao.id,
@@ -129,16 +150,23 @@ for i, row in df.iterrows():
         )
 
         db.add(producao)
+
         importados += 1
 
+        # commit em lote
         if importados % 500 == 0:
             db.commit()
-            print(f"{importados} registros importados...")
+            print(importados, "registros importados...")
 
     except Exception as e:
-        erros += 1
-        print("Erro na linha", i, ":", e)
 
+        erros += 1
+        print("Erro linha", i, ":", e)
+
+
+# -----------------------------
+# FINAL
+# -----------------------------
 db.commit()
 
 print("\nImportação finalizada")
