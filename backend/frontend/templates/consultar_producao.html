@@ -6,244 +6,312 @@
 {% block content %}
 <div class="bg-white rounded-lg shadow p-6">
 
-  <!-- FILTRO -->
+<!-- FILTRO -->
 <div class="bg-gray-50 rounded-lg p-6 mb-6">
 
-  <div class="grid md:grid-cols-4 gap-6 items-end">
+<div class="grid md:grid-cols-4 gap-6 items-end">
 
-    <!-- OPERADOR -->
-    <div>
-      <label class="block text-sm font-medium mb-1">
-        Operador
-      </label>
-      <select id="usuario_id"
-              class="w-full h-11 border border-gray-300 rounded-md px-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-        <option value="">Selecione o operador</option>
-        {% for u in usuarios %}
-          <option value="{{ u.id }}">{{ u.nome }}</option>
-        {% endfor %}
-      </select>
-    </div>
+<div>
+<label class="block text-sm font-medium mb-1">Operador</label>
+<select id="usuario_id"
+class="w-full h-11 border border-gray-300 rounded-md px-3">
+<option value="">Selecione o operador</option>
+{% for u in usuarios %}
+<option value="{{ u.id }}">{{ u.nome }}</option>
+{% endfor %}
+</select>
+</div>
 
-    <!-- DATA INICIAL -->
-    <div>
-      <label class="block text-sm font-medium mb-1">
-        Data Inicial
-      </label>
-      <input type="date"
-             id="data_inicio"
-             class="w-full h-11 border border-gray-300 rounded-md px-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-    </div>
+<div>
+<label class="block text-sm font-medium mb-1">Data Inicial</label>
+<input type="date" id="data_inicio"
+class="w-full h-11 border border-gray-300 rounded-md px-3">
+</div>
 
-    <!-- DATA FINAL -->
-    <div>
-      <label class="block text-sm font-medium mb-1">
-        Data Final
-      </label>
-      <input type="date"
-             id="data_fim"
-             class="w-full h-11 border border-gray-300 rounded-md px-3 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-    </div>
+<div>
+<label class="block text-sm font-medium mb-1">Data Final</label>
+<input type="date" id="data_fim"
+class="w-full h-11 border border-gray-300 rounded-md px-3">
+</div>
 
-    <!-- BOTÃO -->
-    <div>
-        <form method="get" action="/consultar_producao/pdf" class="inline" id="formPDF">
-  <input type="hidden" name="operador">
-  <input type="hidden" name="data_inicial">
-  <input type="hidden" name="data_final">
-     <button
-    type="submit"
-    class="w-full h-11 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition">
-        📄 Gerar PDF
-      </button>
-  </form>
-      <button id="pesquisar"
-              type="button"
-              class="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition">
-        🔍 Pesquisar
-      </button>
-    </div>
+<div>
 
-  </div>
+<form method="get" action="/consultar_producao/pdf" id="formPDF">
+
+<input type="hidden" name="operador">
+<input type="hidden" name="data_inicial">
+<input type="hidden" name="data_final">
+
+<button
+type="submit"
+class="w-full h-11 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md mb-2">
+📄 Gerar PDF
+</button>
+
+</form>
+
+<button id="pesquisar"
+class="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md">
+🔍 Pesquisar
+</button>
 
 </div>
 
-  <form method="get" action="/consultar_producao/pdf" class="inline" id="formPDF">
-  <input type="hidden" name="operador">
-  <input type="hidden" name="data_inicial">
-  <input type="hidden" name="data_final">
-  </form>
+</div>
+</div>
 
+<!-- MENSAGEM -->
+<div id="mensagem" class="hidden mb-4 p-4 rounded text-center"></div>
 
-  <!-- MENSAGEM -->
-  <div id="mensagem" class="hidden mb-4 p-4 rounded text-center"></div>
+<!-- RESULTADO -->
+<div id="resultado" class="hidden">
 
-  <!-- RESULTADO -->
-  <div id="resultado" class="hidden">
+<!-- TOTAL PRODUZIDO -->
+<div class="mb-6 flex gap-6">
 
-    <!-- TABELA -->
-    <table class="w-full border">
-      <thead class="bg-blue-600 text-white">
-        <tr>
-          <th class="p-2">Ficha</th>
-          <th class="p-2">Modelo</th>
-          <th class="p-2">Função</th>
-          <th class="p-2">Data</th>
-          <th class="p-2">Total Peças</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaResultados"></tbody>
-    </table>
+<div class="bg-blue-50 p-4 rounded shadow text-center w-64">
 
-    <!-- GRÁFICO -->
-    <div class="mt-6">
-      <canvas id="graficoProducao" style="height:300px"></canvas>
-    </div>
+<div class="text-sm text-gray-600">
+Total produzido
+</div>
 
-  </div>
+<div id="totalProduzido" class="text-3xl font-bold text-blue-700">
+0
+</div>
+
+</div>
+
+</div>
+
+<!-- GRÁFICO -->
+<div class="mt-4">
+<canvas id="graficoProducao" style="height:500px"></canvas>
+</div>
+
+<!-- TABELA -->
+<table class="w-full border mt-8">
+
+<thead class="bg-blue-600 text-white">
+<tr>
+<th class="p-2">Ficha</th>
+<th class="p-2">Modelo</th>
+<th class="p-2">Função</th>
+<th class="p-2">Data</th>
+<th class="p-2">Total Peças</th>
+</tr>
+</thead>
+
+<tbody id="tabelaResultados"></tbody>
+
+</table>
+
+</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+
 document.addEventListener("DOMContentLoaded", () => {
 
-  const btnPesquisar = document.getElementById("pesquisar");
-  const tabelaResultados = document.getElementById("tabelaResultados");
-  const graficoCanvas = document.getElementById("graficoProducao");
-  const mensagem = document.getElementById("mensagem");
-  const resultado = document.getElementById("resultado");
+const btnPesquisar = document.getElementById("pesquisar");
+const tabelaResultados = document.getElementById("tabelaResultados");
+const graficoCanvas = document.getElementById("graficoProducao");
+const mensagem = document.getElementById("mensagem");
+const resultado = document.getElementById("resultado");
 
-  let grafico = null;
+let grafico = null;
 
-  btnPesquisar.addEventListener("click", async () => {
+btnPesquisar.addEventListener("click", async () => {
 
-    const usuario_id = document.getElementById("usuario_id").value;
-    const data_inicial = document.getElementById("data_inicio").value;
-    const data_final = document.getElementById("data_fim").value;
+const usuario_id = document.getElementById("usuario_id").value;
+const data_inicial = document.getElementById("data_inicio").value;
+const data_final = document.getElementById("data_fim").value;
 
-    if (!usuario_id) {
-      mensagem.textContent = "Informe o usuário.";
-      mensagem.className = "mb-4 p-4 bg-yellow-100 text-yellow-800";
-      mensagem.classList.remove("hidden");
-      resultado.classList.add("hidden");
-      return;
-    }
+if (!usuario_id) {
 
-    const formData = new FormData();
-    formData.append("usuario_id", usuario_id);
-    formData.append("data_inicial", data_inicial);
-    formData.append("data_final", data_final);
+mensagem.textContent = "Informe o usuário.";
+mensagem.className = "mb-4 p-4 bg-yellow-100 text-yellow-800";
+mensagem.classList.remove("hidden");
+resultado.classList.add("hidden");
 
-    const resp = await fetch("/consultar_producao_dados", {
-      method: "POST",
-      body: formData
-    });
+return;
 
-    const data = await resp.json();
+}
 
-    mensagem.classList.add("hidden");
-    resultado.classList.add("hidden");
+const formData = new FormData();
 
-    if (!data.dados || data.dados.length === 0) {
-      mensagem.textContent = "Nenhum resultado encontrado.";
-      mensagem.className = "mb-4 p-4 bg-yellow-100 text-yellow-800";
-      mensagem.classList.remove("hidden");
-      return;
-    }
+formData.append("usuario_id", usuario_id);
+formData.append("data_inicial", data_inicial);
+formData.append("data_final", data_final);
 
-    /* =====================
-       TABELA
-    ===================== */
-    tabelaResultados.innerHTML = data.dados.map(item => `
-      <tr>
-        <td class="p-2">${item.numero_ficha}</td>
-        <td class="p-2">${item.modelo}</td>
-        <td class="p-2">${item.funcao}</td>
-        <td class="p-2">${item.data}</td>
-        <td class="p-2 text-right">${item.quantidade}</td>
-      </tr>
-    `).join("");
+const resp = await fetch("/consultar_producao_dados", {
+method: "POST",
+body: formData
+});
 
-    /* =====================
+const data = await resp.json();
 
+mensagem.classList.add("hidden");
+resultado.classList.add("hidden");
 
-    
-       GRÁFICO AGRUPADO
-       Modelo (X) | Quantidade (Y) | Cor = Função
-    ===================== */
+if (!data.dados || data.dados.length === 0) {
 
-    // Modelos únicos
-    const modelos = [...new Set(data.dados.map(d => d.modelo))];
+mensagem.textContent = "Nenhum resultado encontrado.";
+mensagem.className = "mb-4 p-4 bg-yellow-100 text-yellow-800";
+mensagem.classList.remove("hidden");
 
-    // Funções únicas
-    const funcoes = [...new Set(data.dados.map(d => d.funcao))];
+return;
 
-    // Cores fixas por função
-    const cores = {
-      "CONTAGEM": "#2563eb",
-      "REFORÇADOR": "#7c3aed",
-      "PASSA VIES": "#16a34a",
-      "PASSAR VIES": "#ea580c"
-    };
+}
 
-    const formPDF = document.getElementById("formPDF");
+tabelaResultados.innerHTML = data.dados.map(item => `
+<tr>
+<td class="p-2">${item.numero_ficha}</td>
+<td class="p-2">${item.modelo}</td>
+<td class="p-2">${item.funcao}</td>
+<td class="p-2">${item.data}</td>
+<td class="p-2 text-right">${item.quantidade}</td>
+</tr>
+`).join("");
 
-    formPDF.addEventListener("submit", function () {
+/* AGRUPAR */
 
-    document.querySelector("input[name='operador']").value =
-    document.getElementById("usuario_id").value;
+const agrupado = {};
 
-    document.querySelector("input[name='data_inicial']").value =
-    document.getElementById("data_inicio").value;
+data.dados.forEach(item => {
 
-    document.querySelector("input[name='data_final']").value =
-    document.getElementById("data_fim").value;
+const chave = item.modelo + "|" + item.funcao;
+
+if (!agrupado[chave]) {
+
+agrupado[chave] = {
+modelo: item.modelo,
+funcao: item.funcao,
+quantidade: 0
+};
+
+}
+
+agrupado[chave].quantidade += item.quantidade;
 
 });
 
-    const datasets = funcoes.map(funcao => ({
-      label: funcao,
-      backgroundColor: cores[funcao] || "#6b7280",
-      data: modelos.map(modelo => {
-        const registro = data.dados.find(
-          d => d.modelo === modelo && d.funcao === funcao
-        );
-        return registro ? registro.quantidade : 0;
-      })
-    }));
+/* TOTAL PRODUZIDO */
 
-    resultado.classList.remove("hidden");
+let totalProduzido = 0;
 
-    if (grafico) grafico.destroy();
+Object.values(agrupado).forEach(item => {
+totalProduzido += item.quantidade;
+});
 
-    grafico = new Chart(graficoCanvas, {
-      type: "bar",
-      data: {
-        labels: modelos,
-        datasets: datasets
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "right"
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              precision: 0
-            }
-          }
-        }
-      }
-    });
+document.getElementById("totalProduzido").innerText =
+totalProduzido.toLocaleString();
 
-  });
+/* PREPARAR GRÁFICO */
+
+const modelos = [...new Set(Object.values(agrupado).map(i => i.modelo))];
+const funcoes = [...new Set(Object.values(agrupado).map(i => i.funcao))];
+
+const cores = {
+"CORTE": "#2563eb",
+"COSTURA": "#dc2626",
+"ACABAMENTO": "#16a34a",
+"REFORÇO": "#7c3aed"
+};
+
+const datasets = funcoes.map(funcao => ({
+
+label: funcao,
+
+backgroundColor: cores[funcao] || "#6b7280",
+
+data: modelos.map(modelo => {
+
+const registro = Object.values(agrupado).find(
+r => r.modelo === modelo && r.funcao === funcao
+);
+
+return registro ? registro.quantidade : 0;
+
+})
+
+}));
+
+resultado.classList.remove("hidden");
+
+if (grafico) grafico.destroy();
+
+grafico = new Chart(graficoCanvas, {
+
+type: "bar",
+
+data: {
+labels: modelos,
+datasets: datasets
+},
+
+options: {
+
+indexAxis: "y",
+
+responsive: true,
+maintainAspectRatio: false,
+
+plugins: {
+
+legend: {
+position: "right"
+},
+
+tooltip: {
+callbacks: {
+label: function(context) {
+return context.dataset.label + ": " + context.raw + " pares";
+}
+}
+}
+
+},
+
+scales: {
+
+x: {
+beginAtZero: true,
+ticks: {
+precision: 0
+},
+title: {
+display: true,
+text: "Quantidade produzida"
+}
+}
+
+}
+
+}
 
 });
+
+});
+
+const formPDF = document.getElementById("formPDF");
+
+formPDF.addEventListener("submit", function () {
+
+document.querySelector("input[name='operador']").value =
+document.getElementById("usuario_id").value;
+
+document.querySelector("input[name='data_inicial']").value =
+document.getElementById("data_inicio").value;
+
+document.querySelector("input[name='data_final']").value =
+document.getElementById("data_fim").value;
+
+});
+
+});
+
 </script>
+
 {% endblock %}
